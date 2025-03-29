@@ -143,7 +143,7 @@ export class GraphVisualization {
    * Generates Cytoscape style definitions based on configuration
    * @returns Array of Cytoscape style definitions
    */
-  private generateStyles(): cytoscape.Stylesheet[] {
+  private generateStyles(): cytoscape.StylesheetStyle[] {
     const { nodeStyle, edgeStyle } = this.options;
     
     return [
