@@ -50,6 +50,9 @@ This project provides an HTML-based interactive presentation system that renders
 4. Start the development server:
    ```bash
    npm run dev
+
+   cd dist && npx http-server
+   npx webpack serve
    ```
 
 5. Open your browser at `http://localhost:1234`

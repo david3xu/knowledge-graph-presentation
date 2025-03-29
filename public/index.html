@@ -5,11 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Interactive knowledge graph presentation showcasing concepts, visualizations, and applications">
   <title>Knowledge Graph Presentation</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/theme/black.css">
   <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
   <div class="reveal">
-    <div class="slides"></div>
+    <div class="slides">
+      <!-- Placeholder slide to test if reveal.js is working -->
+      <section>
+        <h1>Knowledge Graph Presentation</h1>
+        <p>Welcome to the interactive Knowledge Graph presentation!</p>
+      </section>
+    </div>
   </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.js"></script>
+  <script>
+    // Basic reveal.js initialization
+    document.addEventListener('DOMContentLoaded', () => {
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        center: true,
+        hash: true,
+      });
+    });
+  </script>
+  <script type="module" src="./main.js"></script>
 </body>
 </html>
