@@ -1,0 +1,271 @@
+/**
+ * Knowledge Graph Presentation Custom Theme
+ * A modern theme optimized for knowledge graph visualizations
+ */
+
+:root {
+  /* Color palette */
+  --kg-primary: #2458B3; /* Primary blue color */
+  --kg-secondary: #36B37E; /* Secondary green color */
+  --kg-accent: #FF5630; /* Accent color for highlights */
+  --kg-dark: #172B4D; /* Dark color for text */
+  --kg-light: #F4F5F7; /* Light color for backgrounds */
+  --kg-gray: #6B778C; /* Gray for supporting text */
+  
+  /* Graph node colors */
+  --node-entity: #4C9AFF;
+  --node-relationship: #FF8F73;
+  --node-property: #79E2F2;
+  --node-concept: #C0B6F2;
+  --node-process: #FFC400;
+  --node-io: #57D9A3;
+  
+  /* Typography */
+  --heading-font: 'Roboto', 'Segoe UI', -apple-system, sans-serif;
+  --body-font: 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --code-font: 'Fira Code', 'Consolas', monospace;
+  
+  /* Sizing */
+  --content-width: 1200px;
+  --slide-padding: 40px;
+}
+
+/* Base styles */
+body {
+  background-color: var(--kg-light);
+  color: var(--kg-dark);
+}
+
+.reveal {
+  font-family: var(--body-font);
+  font-size: 24px;
+  color: var(--kg-dark);
+}
+
+.reveal .slides {
+  text-align: left;
+}
+
+/* Typography */
+.reveal h1, 
+.reveal h2, 
+.reveal h3, 
+.reveal h4 {
+  font-family: var(--heading-font);
+  color: var(--kg-primary);
+  margin-bottom: 0.5em;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.reveal h1 {
+  font-size: 2.5em;
+  font-weight: 700;
+}
+
+.reveal h2 {
+  font-size: 1.8em;
+  font-weight: 600;
+}
+
+.reveal h3 {
+  font-size: 1.4em;
+  font-weight: 600;
+  color: var(--kg-dark);
+}
+
+.reveal h4 {
+  font-size: 1.2em;
+  font-weight: 600;
+  color: var(--kg-dark);
+}
+
+.reveal p {
+  line-height: 1.5;
+  margin: 0.5em 0;
+}
+
+/* Slide elements */
+.reveal .slide-title {
+  color: var(--kg-primary);
+  border-bottom: 2px solid var(--kg-primary);
+  padding-bottom: 10px;
+  margin-bottom: 24px;
+}
+
+.reveal .definition {
+  font-size: 1.1em;
+  color: var(--kg-dark);
+  margin-bottom: 1.5em;
+  font-style: italic;
+  border-left: 3px solid var(--kg-secondary);
+  padding-left: 15px;
+  max-width: 90%;
+}
+
+.reveal .key-points {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.reveal .key-points li {
+  margin-bottom: 0.7em;
+  padding-left: 28px;
+  position: relative;
+}
+
+.reveal .key-points li::before {
+  content: "•";
+  position: absolute;
+  left: 10px;
+  color: var(--kg-secondary);
+  font-weight: bold;
+}
+
+/* Visualization containers */
+.reveal .visualization-container {
+  width: 100%;
+  height: 500px;
+  margin: 20px 0;
+  overflow: hidden;
+  border-radius: 4px;
+  background-color: #fff;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Graph visualization styles */
+.reveal .graph-visualization .node {
+  stroke: #fff;
+  stroke-width: 2px;
+}
+
+.reveal .graph-visualization .node.highlight {
+  stroke: var(--kg-accent);
+  stroke-width: 3px;
+}
+
+.reveal .graph-visualization .edge {
+  stroke-width: 1.5px;
+  stroke-opacity: 0.8;
+}
+
+.reveal .graph-visualization .edge.highlight {
+  stroke: var(--kg-accent);
+  stroke-width: 2.5px;
+  stroke-opacity: 1;
+}
+
+.reveal .graph-visualization .node-label {
+  font-family: var(--body-font);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.reveal .graph-visualization .edge-label {
+  font-family: var(--body-font);
+  font-size: 12px;
+  fill: var(--kg-gray);
+}
+
+/* Timeline visualization */
+.reveal .timeline-visualization .timeline-item {
+  fill: var(--kg-primary);
+}
+
+.reveal .timeline-visualization .timeline-axis {
+  stroke: var(--kg-gray);
+}
+
+.reveal .timeline-visualization .timeline-label {
+  fill: var(--kg-dark);
+  font-family: var(--body-font);
+  font-size: 14px;
+}
+
+/* Table visualization */
+.reveal .table-visualization table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.reveal .table-visualization th {
+  background-color: var(--kg-primary);
+  color: white;
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.reveal .table-visualization td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.reveal .table-visualization tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.reveal .table-visualization tr.highlight {
+  background-color: rgba(54, 179, 126, 0.15);
+}
+
+/* Flow diagram visualization */
+.reveal .flow-diagram-visualization .process-node {
+  fill: var(--node-process);
+}
+
+.reveal .flow-diagram-visualization .io-node {
+  fill: var(--node-io);
+}
+
+.reveal .flow-diagram-visualization .component-node {
+  fill: var(--node-entity);
+}
+
+.reveal .flow-diagram-visualization .input-node {
+  fill: var(--node-concept);
+}
+
+.reveal .flow-diagram-visualization .application-node {
+  fill: var(--node-relationship);
+}
+
+/* Responsive design */
+@media screen and (max-width: 1024px) {
+  .reveal {
+    font-size: 20px;
+  }
+  
+  .reveal .visualization-container {
+    height: 400px;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .reveal {
+    font-size: 18px;
+  }
+  
+  .reveal .visualization-container {
+    height: 350px;
+  }
+  
+  .reveal .table-visualization {
+    font-size: 14px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .reveal {
+    font-size: 16px;
+  }
+  
+  .reveal .slide-title {
+    font-size: 1.5em;
+  }
+  
+  .reveal .visualization-container {
+    height: 300px;
+  }
+}

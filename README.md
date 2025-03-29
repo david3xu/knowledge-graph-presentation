@@ -20,7 +20,7 @@ This project provides an HTML-based interactive presentation system that renders
 - **Reveal.js** - Presentation framework
 - **D3.js** - Data visualization library
 - **Cytoscape.js** - Graph visualization for knowledge graphs
-- **Webpack** - Module bundling and build system
+- **Parcel** - Module bundling and build system
 
 ## Getting Started
 
@@ -52,7 +52,7 @@ This project provides an HTML-based interactive presentation system that renders
    npm run dev
    ```
 
-5. Open your browser at `http://localhost:8080`
+5. Open your browser at `http://localhost:1234`
 
 ### Standard Setup (without Dev Container)
 
@@ -79,6 +79,12 @@ knowledge-graph-presentation/
 │   │   └── chart-config.ts      # Visualization config interfaces
 │   └── utils/                   # Utility functions
 ├── public/                      # Static assets
+├── tests/                       # Test files
+│   ├── unit/                    # Unit tests
+│   ├── integration/             # Integration tests
+│   ├── e2e/                     # End-to-end tests
+│   ├── mocks/                   # Mock implementations
+│   └── setup.ts                 # Jest setup file
 ├── docs/                        # Documentation files
 ├── .devcontainer/               # Development container config
 ├── dist/                        # Build output (generated)
@@ -90,7 +96,7 @@ knowledge-graph-presentation/
 1. Define slide content in the appropriate modules under `src/slides/`
 2. Create or update visualizations in `src/visualizations/`
 3. Run the development server with `npm run dev`
-4. View changes in real-time at `http://localhost:8080`
+4. View changes in real-time at `http://localhost:1234`
 
 ## Building and Deployment
 
@@ -100,15 +106,38 @@ To create a production build:
 npm run build
 ```
 
+The production files will be generated in the `dist/` directory.
+
 For detailed deployment options, see the [Export & Deployment Guide](./docs/presentation-export-guide.md).
 
-## Documentation
+## Testing
 
-Detailed documentation is available in the `docs` directory:
+The project includes a comprehensive testing framework to ensure reliability and maintainability.
 
-- [TypeScript Implementation Guide](./docs/typescript-kg-presentation.md) - Technical architecture and implementation details
-- [GitHub Setup Guide](./docs/github-setup-guide.md) - Repository setup and GitHub integration
-- [Export & Deployment Options](./docs/presentation-export-guide.md) - Publishing and sharing options
+### Testing Structure
+
+- **Unit Tests**: Test individual functions and components in isolation
+- **Integration Tests**: Test interactions between multiple components
+- **End-to-End Tests**: Test complete user flows that span multiple components
+
+### Running Tests
+
+Run all tests:
+```bash
+npm test
+```
+
+Run tests in watch mode (useful during development):
+```bash
+npm run test:watch
+```
+
+Generate a test coverage report:
+```bash
+npm run test:coverage
+```
+
+For more detailed information about the testing strategy, see [Testing Strategy](docs/testing-strategy.md).
 
 ## Visualization Components
 
@@ -129,6 +158,16 @@ To customize the presentation for your specific knowledge graph content:
 2. Modify visualization data in `public/assets/data/`
 3. Adjust styles in `public/styles/theme.css`
 
+## Documentation
+
+Detailed documentation is available in the `docs` directory:
+
+- [TypeScript Implementation Guide](./docs/typescript-kg-presentation.md) - Technical architecture and implementation details
+- [GitHub Setup Guide](./docs/github-setup-guide.md) - Repository setup and GitHub integration
+- [Export & Deployment Options](./docs/presentation-export-guide.md) - Publishing and sharing options
+- [Testing Strategy](docs/testing-strategy.md) - Detailed information about the testing approach
+- [Implementation Plan](docs/kg-implementation-plan.md) - Project implementation roadmap
+
 ## Contributing
 
 1. Fork the repository
@@ -140,3 +179,8 @@ To customize the presentation for your specific knowledge graph content:
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- Reveal.js for the presentation framework
+- D3.js and Cytoscape.js for visualization capabilities

@@ -187,7 +187,7 @@ const businessUseCasesData = {
       'Description': 'Comprehensive evaluation of financial and compliance risks', 
       'Key Benefits': 'Reduced fraud, improved regulatory compliance, better decision making', 
       'Challenges': 'Data quality, explainability requirements, evolving regulations', 
-      'Example Implementation': 'FICO Falcon Fraud Manager, Moody's Analytics' 
+      'Example Implementation': 'FICO Falcon Fraud Manager, Moody\'s Analytics' 
     },
     { 
       'Use Case': 'Content Management', 
@@ -231,7 +231,7 @@ const industryApplicationsData = {
       'Key Applications': 'Product recommendations, inventory optimization, customer segmentation', 
       'Business Impact': 'Increased basket size, improved inventory turns, reduced cart abandonment', 
       'Technical Requirements': 'High query volume, seasonal scaling, real-time personalization', 
-      'Notable Examples': 'Alibaba's E-commerce Graph, eBay Knowledge Graph, Walmart Product Graph' 
+      'Notable Examples': 'Alibaba\'s E-commerce Graph, eBay Knowledge Graph, Walmart Product Graph' 
     },
     { 
       'Industry': 'Manufacturing', 
@@ -252,7 +252,7 @@ const industryApplicationsData = {
       'Key Applications': 'Fraud detection, intelligence analysis, public service delivery', 
       'Business Impact': 'Improved service access, reduced fraud, better resource allocation', 
       'Technical Requirements': 'Security clearance levels, interagency data sharing, privacy protection', 
-      'Notable Examples': 'US Treasury's Financial Crimes Enforcement Network, UK GOV.UK Knowledge Graph' 
+      'Notable Examples': 'US Treasury\'s Financial Crimes Enforcement Network, UK GOV.UK Knowledge Graph' 
     }
   ]
 };
@@ -401,7 +401,7 @@ const recommendationSystemsSlide: SlideConfig = {
     autoLayout: true
   },
   transition: 'slide',
-  notes: 'Highlight that graph-based recommendations address key limitations of traditional approaches, particularly cold-start problems, recommendation diversity, and explainability. Include examples like Amazon's product recommendations, Netflix's content suggestions, and Spotify's music discovery features.'
+  notes: 'Highlight that graph-based recommendations address key limitations of traditional approaches, particularly cold-start problems, recommendation diversity, and explainability. Include examples like Amazon\'s product recommendations, Netflix\'s content suggestions, and Spotify\'s music discovery features.'
 };
 
 /**

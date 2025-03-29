@@ -13,8 +13,19 @@ import { FlowDiagramVisualization } from './visualizations/flow-diagram';
 import { globalResponsiveHandler, ScreenSize } from './utils/responsive';
 import { animateEntrance, AnimationTiming, Easing } from './utils/animation';
 import { AsciiToSvg } from './utils/ascii-to-svg';
+
+// Import all slide modules
 import { introSlideGroup } from './slides/intro';
 import { coreComponentsSlideGroup } from './slides/core-components';
+import { dataModelsSlideGroup } from './slides/data-models';
+import { examplesSlideGroup } from './slides/examples';
+import { constructionSlideGroup } from './slides/construction';
+import { applicationsSlideGroup } from './slides/applications';
+import { queryLanguagesSlideGroup } from './slides/query-languages';
+import { rcaSlideGroup } from './slides/rca';
+import { gettingStartedSlideGroup } from './slides/getting-started';
+import { technologiesSlideGroup } from './slides/technologies';
+import { futureSlideGroup } from './slides/future';
 
 /**
  * Slide Manager handles the creation and orchestration of presentation slides
@@ -876,8 +887,16 @@ document.addEventListener('DOMContentLoaded', () => {
     },
     slideGroups: [
       introSlideGroup,
-      coreComponentsSlideGroup
-      // Additional slide groups will be imported and added here
+      coreComponentsSlideGroup,
+      dataModelsSlideGroup,
+      examplesSlideGroup,
+      constructionSlideGroup,
+      applicationsSlideGroup,
+      queryLanguagesSlideGroup,
+      rcaSlideGroup,
+      gettingStartedSlideGroup,
+      technologiesSlideGroup,
+      futureSlideGroup
     ],
     settings: {
       theme: 'black',

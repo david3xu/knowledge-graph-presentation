@@ -138,7 +138,7 @@ export class TableVisualization {
     
     // Add rows with pagination if enabled
     const displayedRows = this.options.paginate 
-      ? rows.slice(this.currentPage * this.options.rowsPerPage, (this.currentPage + 1) * this.options.rowsPerPage)
+      ? rows.slice(this.currentPage * (this.options.rowsPerPage || 10), (this.currentPage + 1) * (this.options.rowsPerPage || 10))
       : rows;
     
     displayedRows.forEach((row, rowIndex) => {

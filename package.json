@@ -1,36 +1,37 @@
 {
   "name": "kg-presentation",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "Interactive knowledge graph presentation framework",
+  "main": "src/index.ts",
   "scripts": {
+    "start": "npx parcel index.html --open",
+    "dev": "npx parcel index.html --open",
+    "build": "npx parcel build index.html",
     "test": "jest",
-    "dev": "webpack serve --mode development",
-    "build": "webpack --mode production"
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "description": "",
+  "license": "MIT",
   "devDependencies": {
-    "@types/cytoscape": "^3.21.9",
+    "@babel/preset-env": "^7.24.0",
+    "@babel/preset-typescript": "^7.23.3",
+    "@jest/globals": "^29.7.0",
     "@types/d3": "^7.4.3",
-    "@types/node": "^22.13.14",
-    "@types/reveal.js": "^5.0.5",
-    "css-loader": "^7.1.2",
-    "html-webpack-plugin": "^5.6.3",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.20",
+    "@types/reveal.js": "^4.4.8",
+    "babel-jest": "^29.7.0",
     "jest": "^29.7.0",
-    "style-loader": "^4.0.0",
-    "ts-jest": "^29.3.0",
-    "ts-loader": "^9.5.2",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.2",
-    "webpack": "^5.98.0",
-    "webpack-cli": "^6.0.1"
+    "jest-environment-jsdom": "^29.7.0",
+    "parcel": "^2.11.0",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.3.3"
   },
   "dependencies": {
-    "cytoscape": "^3.31.1",
-    "d3": "^7.9.0",
-    "highlight.js": "^11.11.1",
-    "reveal.js": "^5.2.1"
+    "cytoscape": "^3.27.0",
+    "d3": "^7.8.5",
+    "reveal.js": "^4.6.1"
   }
 }
