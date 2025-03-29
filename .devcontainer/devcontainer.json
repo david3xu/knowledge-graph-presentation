@@ -1,0 +1,15 @@
+{
+  "name": "kg-presentation-dev",
+  "dockerFile": "Dockerfile",
+  "settings": {
+    "terminal.integrated.defaultProfile.linux": "bash"
+  },
+  "extensions": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-vscode.vscode-typescript-tslint-plugin"
+  ],
+  "forwardPorts": [8080],
+  "postCreateCommand": "npm install",
+  "remoteUser": "node"
+}
