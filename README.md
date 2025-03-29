@@ -50,9 +50,6 @@ This project provides an HTML-based interactive presentation system that renders
 4. Start the development server:
    ```bash
    npm run dev
-
-   cd dist && npx http-server
-   npx webpack serve
    ```
 
 5. Open your browser at `http://localhost:1234`
@@ -69,12 +66,60 @@ This project provides an HTML-based interactive presentation system that renders
    npm run dev
    ```
 
+## Creating Presentations with Markdown
+
+This presentation system now supports creating and editing presentations using Markdown files. This makes it easier to maintain and update presentation content without modifying the code.
+
+### Markdown Format
+
+The system reads specially formatted markdown files and converts them into interactive slides. The format follows these conventions:
+
+1. **Top-level headings (#)** become the presentation title
+2. **Second-level headings (##)** become section titles
+3. **Third-level headings (###)** become individual slides
+4. **Special formatting** for visualizations and interactive elements
+
+For a complete guide on the markdown format, see [Markdown Format Guide](./docs/markdown-format-guide.md).
+
+### Example Markdown Files
+
+For reference, see these example markdown files:
+- [Knowledge Graph Introduction](./docs/presentation-content/knowledge-graph-introduction.md)
+
+### Adding Your Own Content
+
+To create your own presentation:
+
+1. Create a new markdown file in the `docs/presentation-content/` directory
+2. Format it according to the [Markdown Format Guide](./docs/markdown-format-guide.md)
+3. Update the file path in `src/index.ts` to load your markdown file
+
+## Exporting Presentations
+
+The presentation system supports exporting to various formats:
+
+### PDF Export
+
+To export your presentation as a PDF:
+1. Click the "Download PDF" button on the presentation
+2. The PDF will be generated and downloaded automatically
+
+### HTML Export
+
+To export your presentation as a standalone HTML file:
+1. Click the "Download HTML" button on the presentation
+2. The HTML file will be downloaded and can be opened in any browser without additional dependencies
+
 ## Project Structure
 
 ```
 knowledge-graph-presentation/
 ├── src/                         # Source code
-│   ├── slides/                  # Slide content modules
+│   ├── slides/                  # Slide content modules (legacy)
+│   ├── services/                # Service modules
+│   │   ├── markdownLoader.ts    # Loads markdown files
+│   │   ├── markdownParser.ts    # Parses markdown into slides
+│   │   └── presentationManager.ts # Manages presentation loading/export
 │   ├── visualizations/          # Visualization components
 │   ├── types/                   # TypeScript type definitions
 │   │   ├── graph-data.ts        # Node/edge interfaces
@@ -82,13 +127,16 @@ knowledge-graph-presentation/
 │   │   └── chart-config.ts      # Visualization config interfaces
 │   └── utils/                   # Utility functions
 ├── public/                      # Static assets
+├── docs/                        # Documentation and content files
+│   ├── markdown-format-guide.md # Guide for markdown formatting
+│   └── presentation-content/    # Markdown presentation files
+│       └── knowledge-graph-introduction.md # Example presentation
 ├── tests/                       # Test files
 │   ├── unit/                    # Unit tests
 │   ├── integration/             # Integration tests
 │   ├── e2e/                     # End-to-end tests
 │   ├── mocks/                   # Mock implementations
 │   └── setup.ts                 # Jest setup file
-├── docs/                        # Documentation files
 ├── .devcontainer/               # Development container config
 ├── dist/                        # Build output (generated)
 └── README.md                    # This file

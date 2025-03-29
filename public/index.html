@@ -5,33 +5,57 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Interactive knowledge graph presentation showcasing concepts, visualizations, and applications">
   <title>Knowledge Graph Presentation</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/theme/black.css">
-  <link rel="stylesheet" href="styles/main.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+    }
+
+    .reveal {
+      height: 100%;
+      width: 100%;
+    }
+
+    .export-controls {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 100;
+    }
+
+    .export-button {
+      padding: 8px 12px;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    .pdf-button {
+      background-color: #4285f4;
+    }
+
+    .html-button {
+      background-color: #0f9d58;
+    }
+  </style>
 </head>
 <body>
   <div class="reveal">
     <div class="slides">
-      <!-- Placeholder slide to test if reveal.js is working -->
+      <!-- Slides will be dynamically generated from markdown -->
       <section>
-        <h1>Knowledge Graph Presentation</h1>
-        <p>Welcome to the interactive Knowledge Graph presentation!</p>
+        <h1>Loading presentation...</h1>
+        <p>Please wait while the presentation loads.</p>
       </section>
     </div>
   </div>
   
-  <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.js"></script>
-  <script>
-    // Basic reveal.js initialization
-    document.addEventListener('DOMContentLoaded', () => {
-      Reveal.initialize({
-        controls: true,
-        progress: true,
-        center: true,
-        hash: true,
-      });
-    });
-  </script>
-  <script type="module" src="./main.js"></script>
+  <!-- The TypeScript entry point will be compiled and included by Parcel -->
+  <script type="module" src="../src/index.ts"></script>
 </body>
 </html>

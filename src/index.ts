@@ -14,18 +14,22 @@ import { globalResponsiveHandler, ScreenSize } from './utils/responsive';
 import { animateEntrance, AnimationTiming, Easing } from './utils/animation';
 import { AsciiToSvg } from './utils/ascii-to-svg';
 
+// Import services
+import { PresentationManager } from './services/presentationManager';
+
 // Import all slide modules
-import { introSlideGroup } from './slides/intro';
-import { coreComponentsSlideGroup } from './slides/core-components';
-import { dataModelsSlideGroup } from './slides/data-models';
-import { examplesSlideGroup } from './slides/examples';
-import { constructionSlideGroup } from './slides/construction';
-import { applicationsSlideGroup } from './slides/applications';
-import { queryLanguagesSlideGroup } from './slides/query-languages';
-import { rcaSlideGroup } from './slides/rca';
-import { gettingStartedSlideGroup } from './slides/getting-started';
-import { technologiesSlideGroup } from './slides/technologies';
-import { futureSlideGroup } from './slides/future';
+// Comment these out as they will be replaced by markdown loading
+// import { introSlideGroup } from './slides/intro';
+// import { coreComponentsSlideGroup } from './slides/core-components';
+// import { dataModelsSlideGroup } from './slides/data-models';
+// import { examplesSlideGroup } from './slides/examples';
+// import { constructionSlideGroup } from './slides/construction';
+// import { applicationsSlideGroup } from './slides/applications';
+// import { queryLanguagesSlideGroup } from './slides/query-languages';
+// import { rcaSlideGroup } from './slides/rca';
+// import { gettingStartedSlideGroup } from './slides/getting-started';
+// import { technologiesSlideGroup } from './slides/technologies';
+// import { futureSlideGroup } from './slides/future';
 
 /**
  * Slide Manager handles the creation and orchestration of presentation slides
@@ -877,27 +881,24 @@ document.addEventListener('DOMContentLoaded', () => {
   // Make the slide manager available globally for API access
   (window as any).slideManager = slideManager;
   
-  // Create presentation configuration
-  const presentationConfig: PresentationConfig = {
+  // Create presentation manager
+  const presentationManager = new PresentationManager();
+  presentationManager.setSlideManager(slideManager);
+  
+  // Make presentation manager available globally
+  (window as any).presentationManager = presentationManager;
+  
+  // Add export controls
+  createExportControls();
+  
+  // Load the presentation from markdown
+  presentationManager.loadPresentation('./docs/presentation-content/enhanced-knowledge-graph.md', {
     title: 'Knowledge Graph Presentation',
     presenter: {
       name: 'John Smith',
       title: 'Knowledge Graph Architect',
       organization: 'Graph Technologies Inc.'
     },
-    slideGroups: [
-      introSlideGroup,
-      coreComponentsSlideGroup,
-      dataModelsSlideGroup,
-      examplesSlideGroup,
-      constructionSlideGroup,
-      applicationsSlideGroup,
-      queryLanguagesSlideGroup,
-      rcaSlideGroup,
-      gettingStartedSlideGroup,
-      technologiesSlideGroup,
-      futureSlideGroup
-    ],
     settings: {
       theme: 'black',
       defaultTransition: 'slide',
@@ -905,11 +906,68 @@ document.addEventListener('DOMContentLoaded', () => {
       controls: true,
       progress: true,
       center: true
-    }
-  };
-  
-  // Load the presentation configuration
-  slideManager.loadPresentation(presentationConfig);
+    },
+    useEnhancedParser: true
+  }).catch(error => {
+    console.error('Failed to load presentation:', error);
+  });
 });
+
+/**
+ * Creates export control buttons
+ */
+function createExportControls(): void {
+  // Create container for export controls
+  const exportControls = document.createElement('div');
+  exportControls.className = 'export-controls';
+  exportControls.style.position = 'fixed';
+  exportControls.style.bottom = '20px';
+  exportControls.style.right = '20px';
+  exportControls.style.zIndex = '100';
+  
+  // Create PDF export button
+  const pdfButton = document.createElement('button');
+  pdfButton.className = 'export-button pdf-button';
+  pdfButton.textContent = 'Download PDF';
+  pdfButton.style.marginRight = '10px';
+  pdfButton.style.padding = '8px 12px';
+  pdfButton.style.backgroundColor = '#4285f4';
+  pdfButton.style.color = 'white';
+  pdfButton.style.border = 'none';
+  pdfButton.style.borderRadius = '4px';
+  pdfButton.style.cursor = 'pointer';
+  
+  // Add click event for PDF export
+  pdfButton.addEventListener('click', () => {
+    if ((window as any).presentationManager) {
+      (window as any).presentationManager.exportToPDF();
+    }
+  });
+  
+  // Create HTML export button
+  const htmlButton = document.createElement('button');
+  htmlButton.className = 'export-button html-button';
+  htmlButton.textContent = 'Download HTML';
+  htmlButton.style.padding = '8px 12px';
+  htmlButton.style.backgroundColor = '#0f9d58';
+  htmlButton.style.color = 'white';
+  htmlButton.style.border = 'none';
+  htmlButton.style.borderRadius = '4px';
+  htmlButton.style.cursor = 'pointer';
+  
+  // Add click event for HTML export
+  htmlButton.addEventListener('click', () => {
+    if ((window as any).presentationManager) {
+      (window as any).presentationManager.exportToHTML();
+    }
+  });
+  
+  // Add buttons to container
+  exportControls.appendChild(pdfButton);
+  exportControls.appendChild(htmlButton);
+  
+  // Add container to document
+  document.body.appendChild(exportControls);
+}
 
 export {};
