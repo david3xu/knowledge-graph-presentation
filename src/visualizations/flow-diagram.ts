@@ -5,12 +5,17 @@
 import * as d3 from 'd3';
 import { FlowDiagramVisualizationOptions } from '../types/chart-config';
 
+// Extend the imported interface with additional properties
+interface ExtendedFlowDiagramOptions extends FlowDiagramVisualizationOptions {
+  zoomable?: boolean;
+}
+
 /**
  * Core visualization class for rendering process flow diagrams
  */
 export class FlowDiagramVisualization {
   private container: HTMLElement;
-  private options: FlowDiagramVisualizationOptions;
+  private options: ExtendedFlowDiagramOptions;
   private svg: d3.Selection<SVGSVGElement, unknown, null, undefined> | null = null;
   private width: number;
   private height: number;
@@ -55,7 +60,7 @@ export class FlowDiagramVisualization {
    * Creates a new flow diagram visualization instance
    * @param options Configuration options for the flow diagram visualization
    */
-  constructor(options: FlowDiagramVisualizationOptions) {
+  constructor(options: ExtendedFlowDiagramOptions) {
     this.container = options.container;
     this.options = this.applyDefaultOptions(options);
     
@@ -69,8 +74,8 @@ export class FlowDiagramVisualization {
    * @param options User options
    * @returns Merged options with defaults applied
    */
-  private applyDefaultOptions(options: FlowDiagramVisualizationOptions): FlowDiagramVisualizationOptions {
-    const defaults: Partial<FlowDiagramVisualizationOptions> = {
+  private applyDefaultOptions(options: ExtendedFlowDiagramOptions): ExtendedFlowDiagramOptions {
+    const defaults: Partial<ExtendedFlowDiagramOptions> = {
       width: this.container.clientWidth,
       height: 600,
       responsive: true,
@@ -84,6 +89,7 @@ export class FlowDiagramVisualization {
       levelSeparation: 100,
       rankAlignment: true,
       draggable: true,
+      zoomable: true,
       snapToGrid: false,
       gridSize: 20,
       showMiniMap: false,
@@ -192,7 +198,7 @@ export class FlowDiagramVisualization {
     this.nodesLayer = this.svg.append('g').attr('class', 'nodes-layer');
     
     // Add zoom behavior if enabled
-    if (this.options.zoomable) {
+    if (this.options.zoomable !== undefined ? this.options.zoomable : true) {
       const zoom = d3.zoom<SVGSVGElement, unknown>()
         .scaleExtent([0.2, 5])
         .on('zoom', (event) => {
@@ -359,7 +365,7 @@ export class FlowDiagramVisualization {
       .attr('class', 'node')
       .attr('data-id', d => d.id)
       .attr('transform', d => `translate(${d.position?.x || 0}, ${d.position?.y || 0})`)
-      .classed('draggable', this.options.draggable);
+      .classed('draggable', !!this.options.draggable);
     
     // Add node shapes based on type
     nodeElements.each((d, i, elements) => {
@@ -407,7 +413,7 @@ export class FlowDiagramVisualization {
    * Makes a node draggable
    * @param node D3 selection of the node element
    */
-  private makeNodeDraggable(node: d3.Selection<d3.BaseType, any, d3.BaseType, any>): void {
+  private makeNodeDraggable(node: d3.Selection<any, any, any, any>): void {
     // Create drag behavior
     const drag = d3.drag<any, any>()
       .on('start', (event, d) => {
@@ -901,7 +907,7 @@ export class FlowDiagramVisualization {
    * Updates visualization options and reapplies them
    * @param options New visualization options
    */
-  public updateOptions(options: Partial<FlowDiagramVisualizationOptions>): void {
+  public updateOptions(options: Partial<ExtendedFlowDiagramOptions>): void {
     this.options = { ...this.options, ...options };
     this.render();
   }

@@ -152,7 +152,7 @@ export class GraphVisualization {
         selector: 'node',
         style: {
           'background-color': nodeStyle?.color,
-          'shape': nodeStyle?.shape,
+          'shape': nodeStyle?.shape as any,
           'width': nodeStyle?.size,
           'height': nodeStyle?.size,
           'border-width': nodeStyle?.borderWidth,
@@ -191,7 +191,7 @@ export class GraphVisualization {
           'line-color': edgeStyle?.color,
           'target-arrow-color': edgeStyle?.color,
           'source-arrow-color': edgeStyle?.color,
-          'target-arrow-shape': edgeStyle?.arrowShape,
+          'target-arrow-shape': edgeStyle?.arrowShape as any,
           'arrow-scale': edgeStyle?.arrowSize,
           'curve-style': this.options.curvedEdges ? 'bezier' : 'straight',
           'line-style': edgeStyle?.style,
@@ -292,7 +292,7 @@ export class GraphVisualization {
           isGroup: node.data('isGroup')
         };
         
-        this.options.onClick(event.originalEvent as MouseEvent, nodeData);
+        this.options.onClick({ event: event.originalEvent as MouseEvent, element: nodeData });
       }
     });
     
@@ -310,7 +310,7 @@ export class GraphVisualization {
           weight: edge.data('weight')
         };
         
-        this.options.onClick(event.originalEvent as MouseEvent, edgeData);
+        this.options.onClick({ event: event.originalEvent as MouseEvent, element: edgeData });
       }
     });
     
@@ -425,20 +425,20 @@ export class GraphVisualization {
     if (!this.cy) return;
     
     // Show all elements first
-    this.cy.elements().show();
+    (this.cy.elements() as any).show();
     
     // Filter nodes by type if specified
     if (filter.nodeTypes && filter.nodeTypes.length > 0) {
-      this.cy.nodes().filter(node => {
+      (this.cy.nodes().filter(node => {
         return !filter.nodeTypes?.includes(node.data('type'));
-      }).hide();
+      }) as any).hide();
     }
     
     // Filter edges by label if specified
     if (filter.edgeLabels && filter.edgeLabels.length > 0) {
-      this.cy.edges().filter(edge => {
+      (this.cy.edges().filter(edge => {
         return !filter.edgeLabels?.includes(edge.data('label'));
-      }).hide();
+      }) as any).hide();
     }
     
     // More complex property filtering would be implemented here
@@ -522,7 +522,7 @@ export class GraphVisualization {
       full: true,
       scale: 2,
       quality: quality
-    });
+    } as any) as string;
   }
 
   /**

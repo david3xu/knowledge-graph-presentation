@@ -352,7 +352,7 @@ export const Easing = {
     // Animation frame callback
     const callback = (progress: number) => {
       interpolations.forEach(({ property, interpolate }) => {
-        element.style[property as any] = interpolate(progress);
+        element.style[property as any] = String(interpolate(progress));
       });
     };
     

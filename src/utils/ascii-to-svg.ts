@@ -495,12 +495,12 @@ export interface AsciiToSvgOptions {
             
             // If we have a line with at least two points, create a shape
             if (points.length >= 2) {
-              const svgPoints = points.map(([r, c]) => ({
+              const svgPoints = points.map(([r, c]: [number, number]) => ({
                 x: c * this.options.boxWidth + this.options.boxWidth / 2,
                 y: r * this.options.boxHeight + this.options.boxHeight / 2
               }));
               
-              const svgArrows = arrows.map(arrow => ({
+              const svgArrows = arrows.map((arrow: { row: number, col: number, direction: string }) => ({
                 x: arrow.col * this.options.boxWidth + this.options.boxWidth / 2,
                 y: arrow.row * this.options.boxHeight + this.options.boxHeight / 2,
                 direction: arrow.direction
@@ -780,7 +780,7 @@ export interface AsciiToSvgOptions {
       
       // Create a polyline
       const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-      polyline.setAttribute('points', points.map(p => `${p.x},${p.y}`).join(' '));
+      polyline.setAttribute('points', points.map((p: { x: number, y: number }) => `${p.x},${p.y}`).join(' '));
       polyline.setAttribute('fill', 'none');
       polyline.setAttribute('stroke', this.options.lineColor);
       polyline.setAttribute('stroke-width', '1');
@@ -788,7 +788,7 @@ export interface AsciiToSvgOptions {
       
       // Render arrows if present
       if (shape.data.arrows && shape.data.arrows.length > 0) {
-        shape.data.arrows.forEach(arrow => {
+        shape.data.arrows.forEach((arrow: { x: number, y: number, direction: string }) => {
           this.renderArrowHead(lineGroup, arrow.x, arrow.y, arrow.direction);
         });
       }
@@ -806,7 +806,7 @@ export interface AsciiToSvgOptions {
       text.setAttribute('y', (shape.bounds.y + this.options.boxHeight * 0.7).toString());
       text.setAttribute('font-size', this.options.fontSize.toString());
       text.setAttribute('fill', this.options.textColor);
-      text.textContent = shape.text;
+      text.textContent = shape.text || '';
       parent.appendChild(text);
     }
     
