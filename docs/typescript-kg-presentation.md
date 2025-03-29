@@ -25,15 +25,15 @@ knowledge-graph-presentation/
 │   │   ├── rca.ts              # Root cause analysis focus
 │   │   ├── getting-started.ts  # Implementation roadmap
 │   │   └── future.ts           # Future directions
+│   ├── types/                  # TypeScript type definitions
+│   │   ├── graph-data.ts       # Node/edge interfaces
+│   │   ├── slide-data.ts       # Slide configuration interfaces
+│   │   └── chart-config.ts     # Visualization config interfaces
 │   ├── visualizations/
 │   │   ├── graph.ts            # Knowledge graph visualization
 │   │   ├── timeline.ts         # Timeline renderer
 │   │   ├── table.ts            # Comparison table component
-│   │   ├── flow-diagram.ts     # Process flow diagrams
-│   │   └── types/              # TypeScript type definitions
-│   │       ├── graph-data.ts   # Node/edge interfaces
-│   │       ├── slide-data.ts   # Slide configuration interfaces
-│   │       └── chart-config.ts # Visualization config interfaces
+│   │   └── flow-diagram.ts     # Process flow diagrams
 │   └── utils/
 │       ├── animation.ts        # Transition utilities
 │       ├── responsive.ts       # Responsive layout handlers

@@ -73,8 +73,11 @@ knowledge-graph-presentation/
 ├── src/                         # Source code
 │   ├── slides/                  # Slide content modules
 │   ├── visualizations/          # Visualization components
-│   ├── utils/                   # Utility functions
-│   └── types/                   # TypeScript type definitions
+│   ├── types/                   # TypeScript type definitions
+│   │   ├── graph-data.ts        # Node/edge interfaces
+│   │   ├── slide-data.ts        # Slide configuration interfaces
+│   │   └── chart-config.ts      # Visualization config interfaces
+│   └── utils/                   # Utility functions
 ├── public/                      # Static assets
 ├── docs/                        # Documentation files
 ├── .devcontainer/               # Development container config
