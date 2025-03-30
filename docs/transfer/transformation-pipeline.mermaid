@@ -1,0 +1,36 @@
+flowchart TD
+    A[Markdown Files] --> B[MarkdownLoader]
+    B --> C[EnhancedMarkdownParser]
+    C --> D[MarkdownContentRegistry]
+    
+    D --> E{Domain-Specific Transformers}
+    E --> E1[IntroDataTransformer]
+    E --> E2[ArchitectureDataTransformer]
+    E --> E3[DataModelsDataTransformer]
+    
+    E1 & E2 & E3 --> F{Domain-Specific Config Factories}
+    F --> F1[IntroConfigFactory]
+    F --> F2[ArchitectureConfigFactory]
+    F --> F3[DataModelsConfigFactory]
+    
+    F1 & F2 & F3 --> G{Domain-Specific Slide Factories}
+    G --> G1[IntroSlideFactory]
+    G --> G2[ArchitectureSlideFactory]
+    G --> G3[DataModelsSlideFactory]
+    
+    G1 & G2 & G3 --> H[Domain Modules]
+    H --> H1[IntroModule]
+    H --> H2[ArchitectureModule]
+    H --> H3[DataModelsModule]
+    
+    H1 & H2 & H3 --> I[PresentationBuilder]
+    I --> J[SlideManager]
+    J --> K[Reveal.js Presentation]
+    
+    style A fill:#f9f9f9,stroke:#333,stroke-width:1px
+    style D fill:#d4edda,stroke:#333,stroke-width:1px
+    style E fill:#cce5ff,stroke:#333,stroke-width:1px
+    style F fill:#cce5ff,stroke:#333,stroke-width:1px
+    style G fill:#cce5ff,stroke:#333,stroke-width:1px
+    style H fill:#d4edda,stroke:#333,stroke-width:1px
+    style K fill:#f8d7da,stroke:#333,stroke-width:1px

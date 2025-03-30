@@ -15,21 +15,25 @@ import { animateEntrance, AnimationTiming, Easing } from './utils/animation';
 import { AsciiToSvg } from './utils/ascii-to-svg';
 
 // Import services
-import { PresentationManager } from './services/presentationManager';
+import { PresentationManager } from './services/presentation-manager';
+import { PresentationBuilder } from './services/presentation-builder';
+import { markdownLoader } from './services/markdown-loader';
+import { markdownContentRegistry } from './services';
 
-// Import all slide modules
-// Comment these out as they will be replaced by markdown loading
-// import { introSlideGroup } from './slides/intro';
-// import { coreComponentsSlideGroup } from './slides/core-components';
-// import { dataModelsSlideGroup } from './slides/data-models';
-// import { examplesSlideGroup } from './slides/examples';
-// import { constructionSlideGroup } from './slides/construction';
-// import { applicationsSlideGroup } from './slides/applications';
-// import { queryLanguagesSlideGroup } from './slides/query-languages';
-// import { rcaSlideGroup } from './slides/rca';
-// import { gettingStartedSlideGroup } from './slides/getting-started';
-// import { technologiesSlideGroup } from './slides/technologies';
-// import { futureSlideGroup } from './slides/future';
+// Import modules - these will replace the imported slide groups
+// Note: Import dynamically for code splitting when needed
+import { getIntroductionSlides } from './modules/intro';
+
+// Import slide modules - these will be progressively migrated to the modular architecture
+// Comment these out as they are replaced by modules
+import { getCoreComponentsSlides } from './modules/core-components';
+import { getDataModelsSlides } from './modules/data-models';
+import { getConstructionSlides } from './modules/construction';
+import { getIndustryApplicationsSlides } from './modules/industry-applications';
+import { getQueryMechanismsSlides } from './modules/query-mechanisms';
+import { getRCASlides } from './modules/root-cause-analysis';
+import { getImplementationRoadmapSlides } from './modules/implementation-roadmap';
+import { getFutureDirectionsSlides } from './modules/future-directions';
 
 /**
  * Slide Manager handles the creation and orchestration of presentation slides
@@ -864,9 +868,28 @@ class SlideManager {
 }
 
 /**
+ * Initializes the presentation content system
+ * This function loads markdown content into the registry
+ */
+async function initializeContent() {
+  try {
+    // Initialize content registry from markdown files
+    await markdownLoader.initializeContentRegistry();
+    console.log('Content registry initialized successfully');
+    return true;
+  } catch (error) {
+    console.error('Failed to initialize content registry:', error);
+    return false;
+  }
+}
+
+/**
  * Main application initialization
  */
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // First initialize the content registry
+  await initializeContent();
+  
   // Find the presentation container
   const container = document.querySelector('.reveal');
   
@@ -891,26 +914,69 @@ document.addEventListener('DOMContentLoaded', () => {
   // Add export controls
   createExportControls();
   
-  // Load the presentation from markdown
-  presentationManager.loadPresentation('./docs/presentation-content/enhanced-knowledge-graph.md', {
-    title: 'Knowledge Graph Presentation',
-    presenter: {
-      name: 'John Smith',
-      title: 'Knowledge Graph Architect',
-      organization: 'Graph Technologies Inc.'
-    },
-    settings: {
-      theme: 'black',
-      defaultTransition: 'slide',
-      showSlideNumber: 'all',
-      controls: true,
-      progress: true,
-      center: true
-    },
-    useEnhancedParser: true
-  }).catch(error => {
-    console.error('Failed to load presentation:', error);
-  });
+  // Detect audience type and content source from URL parameters
+  const isProfessionalAudience = window.location.search.includes('audience=professional');
+  const useMarkdown = window.location.search.includes('source=markdown');
+  
+  if (useMarkdown) {
+    // Load directly from markdown file (legacy approach)
+    presentationManager.loadPresentation('./docs/presentation-content/enhanced-knowledge-graph.md', {
+      title: 'Knowledge Graph Presentation',
+      presenter: {
+        name: 'John Smith',
+        title: 'Knowledge Graph Architect',
+        organization: 'Graph Technologies Inc.'
+      },
+      settings: {
+        theme: 'black',
+        defaultTransition: 'slide',
+        showSlideNumber: 'all',
+        controls: true,
+        progress: true,
+        center: true
+      },
+      useEnhancedParser: true
+    }).catch(error => {
+      console.error('Failed to load presentation:', error);
+    });
+  } else {
+    // Use new modular architecture approach
+    const presentationConfig = new PresentationBuilder()
+      .setTitle('Knowledge Graph Presentation')
+      .setPresenter({
+        name: 'John Smith',
+        title: 'Knowledge Graph Architect',
+        organization: 'Graph Technologies Inc.'
+      })
+      // Add module-based content
+      .addModuleContent(() => getIntroductionSlides({
+        highlightTerms: ['knowledge graph', 'semantic web', 'linked data'],
+        includeEvolutionSlide: true
+      }))
+      // Add legacy slide groups that haven't been migrated to modules yet
+      // These will be removed as they are converted to modules
+      .addModuleContent(() => getCoreComponentsSlides())
+      .addModuleContent(() => getDataModelsSlides())
+      .addModuleContent(() => getConstructionSlides())
+      .addModuleContent(() => getIndustryApplicationsSlides())
+      .addModuleContent(() => getQueryMechanismsSlides())
+      .addModuleContent(() => getRCASlides())
+      .addModuleContent(() => getImplementationRoadmapSlides())
+      .addModuleContent(() => getFutureDirectionsSlides())
+      .updateSettings({
+        theme: 'black',
+        defaultTransition: 'slide',
+        showSlideNumber: 'all',
+        controls: true,
+        progress: true,
+        center: true,
+        keyboard: true
+      })
+      .build();
+    
+    // Load the presentation
+    presentationManager.loadPresentationFromConfig(presentationConfig);
+  }
 });
 
 /**

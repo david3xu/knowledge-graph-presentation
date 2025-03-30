@@ -1,72 +1,249 @@
 /**
  * Table Visualization Component
- * Creates interactive data comparison tables with sorting, filtering, and highlighting
+ * Renders interactive data tables for comparative knowledge graph analysis
  */
 import { TableVisualizationOptions } from '../types/chart-config';
 
-/**
- * Core visualization class for rendering comparison tables
- */
 export class TableVisualization {
   private container: HTMLElement;
+  private table: HTMLTableElement | null = null;
+  private headers: string[];
+  private rows: Record<string, any>[];
   private options: TableVisualizationOptions;
-  private tableElement: HTMLTableElement | null = null;
-  private sortState: { column: string; direction: 'asc' | 'desc' } | null = null;
-  private filterValues: Record<string, string> = {};
-  private currentPage: number = 0;
-
+  private sortColumn: string | null = null;
+  private sortDirection: 'ascending' | 'descending' = 'ascending';
+  private searchTerm: string = '';
+  private tableContainer: HTMLDivElement | null = null;
+  private paginationContainer: HTMLDivElement | null = null;
+  private currentPage: number = 1;
+  private highlightedCells: Array<{ rowIndex: number, columnName: string }> = [];
+  
   /**
-   * Creates a new table visualization instance
-   * @param options Configuration options for the table visualization
+   * Creates a new table visualization
+   * @param options Visualization options
    */
   constructor(options: TableVisualizationOptions) {
     this.container = options.container;
-    this.options = this.applyDefaultOptions(options);
+    this.headers = options.headers;
+    this.rows = options.rows;
+    this.options = this.initializeOptions(options);
+    this.highlightedCells = options.highlightCells || [];
+    
+    // Initialize the visualization
+    this.initializeVisualization();
   }
-
+  
   /**
-   * Applies default options to user-provided options
-   * @param options User options
-   * @returns Merged options with defaults applied
+   * Initialize visualization options with defaults
+   * @param options User-provided options
    */
-  private applyDefaultOptions(options: TableVisualizationOptions): TableVisualizationOptions {
-    const defaults: Partial<TableVisualizationOptions> = {
-      responsive: true,
-      sortable: true,
-      filterable: false,
-      paginate: false,
-      rowsPerPage: 10,
-      showRowNumbers: false,
-      editable: false,
-      resizableColumns: false,
-      selectable: false,
+  private initializeOptions(options: TableVisualizationOptions): TableVisualizationOptions {
+    // Define default options
+    return {
+      ...options,
+      sortable: options.sortable !== false,
+      filterable: options.filterable || false,
+      paginate: options.paginate || false,
+      rowsPerPage: options.rowsPerPage || 10,
+      showRowNumbers: options.showRowNumbers || false,
+      theme: options.theme || 'light',
+      resizableColumns: options.resizableColumns || false,
+      selectable: options.selectable || false
     };
-
-    return { ...defaults, ...options };
   }
-
+  
   /**
-   * Creates the table structure
-   * @returns HTMLTableElement for the comparison table
+   * Initialize the visualization container and elements
    */
-  private createTable(): HTMLTableElement {
-    const { headers, rows, caption } = this.options;
+  private initializeVisualization(): void {
+    // Clear any existing content
+    this.container.innerHTML = '';
     
-    // Create table element
-    const table = document.createElement('table');
-    table.className = 'comparison-table';
+    // Create table wrapper with appropriate styling
+    this.container.classList.add('table-visualization-container');
     
-    // Add responsive wrapper if needed
-    if (this.options.responsive) {
-      table.classList.add('responsive');
+    // Add filter controls if enabled
+    if (this.options.filterable) {
+      this.createFilterControls();
     }
+    
+    // Create table container for scrolling
+    this.tableContainer = document.createElement('div');
+    this.tableContainer.className = 'table-container';
+    this.tableContainer.style.width = '100%';
+    this.tableContainer.style.overflowX = 'auto';
+    this.container.appendChild(this.tableContainer);
+    
+    // Create the table
+    this.createTable();
     
     // Add caption if provided
-    if (caption) {
-      const captionElement = document.createElement('caption');
-      captionElement.textContent = caption;
-      table.appendChild(captionElement);
+    if (this.options.caption) {
+      const caption = document.createElement('caption');
+      caption.textContent = this.options.caption;
+      this.table!.appendChild(caption);
     }
+    
+    // Add pagination if enabled
+    if (this.options.paginate) {
+      this.createPagination();
+    }
+    
+    // Apply theme
+    this.applyTheme();
+  }
+  
+  /**
+   * Apply theme to the table
+   */
+  private applyTheme(): void {
+    if (!this.table) return;
+    
+    const theme = this.options.theme;
+    
+    if (theme === 'dark') {
+      this.table.classList.add('dark-theme');
+      
+      // Apply dark theme styles
+      this.applyStyleToTable({
+        color: '#e0e0e0',
+        backgroundColor: '#333333',
+        borderColor: '#555555',
+        headerBackgroundColor: '#444444',
+        headerColor: '#ffffff',
+        alternateRowColor: '#3a3a3a',
+        hoverColor: '#505050'
+      });
+    } else {
+      this.table.classList.add('light-theme');
+      
+      // Apply light theme styles
+      this.applyStyleToTable({
+        color: '#333333',
+        backgroundColor: '#ffffff',
+        borderColor: '#e0e0e0',
+        headerBackgroundColor: '#f5f5f5',
+        headerColor: '#333333',
+        alternateRowColor: '#f9f9f9',
+        hoverColor: '#e9e9e9'
+      });
+    }
+  }
+  
+  /**
+   * Apply styles to the table
+   * @param styles Object containing style properties
+   */
+  private applyStyleToTable(styles: {
+    color: string;
+    backgroundColor: string;
+    borderColor: string;
+    headerBackgroundColor: string;
+    headerColor: string;
+    alternateRowColor: string;
+    hoverColor: string;
+  }): void {
+    if (!this.table) return;
+    
+    // Apply container styles
+    this.tableContainer!.style.color = styles.color;
+    this.tableContainer!.style.backgroundColor = styles.backgroundColor;
+    
+    // Apply table styles
+    this.table.style.width = '100%';
+    this.table.style.borderCollapse = 'collapse';
+    this.table.style.border = `1px solid ${styles.borderColor}`;
+    
+    // Apply styles to header cells
+    const headerCells = this.table.querySelectorAll('th');
+    headerCells.forEach(cell => {
+      cell.style.backgroundColor = styles.headerBackgroundColor;
+      cell.style.color = styles.headerColor;
+      cell.style.padding = '12px';
+      cell.style.textAlign = 'left';
+      cell.style.borderBottom = `2px solid ${styles.borderColor}`;
+      cell.style.position = 'sticky';
+      cell.style.top = '0';
+    });
+    
+    // Apply styles to data cells
+    const rows = this.table.querySelectorAll('tbody tr');
+    rows.forEach((row, index) => {
+      // Apply alternating row styles
+      if (index % 2 === 1) {
+        (row as HTMLElement).style.backgroundColor = styles.alternateRowColor;
+      }
+      
+      // Apply hover effect
+      row.addEventListener('mouseenter', () => {
+        (row as HTMLElement).style.backgroundColor = styles.hoverColor;
+      });
+      
+      row.addEventListener('mouseleave', () => {
+        if (index % 2 === 1) {
+          (row as HTMLElement).style.backgroundColor = styles.alternateRowColor;
+        } else {
+          (row as HTMLElement).style.backgroundColor = styles.backgroundColor;
+        }
+      });
+      
+      // Style cells
+      const cells = row.querySelectorAll('td');
+      cells.forEach(cell => {
+        cell.style.padding = '8px 12px';
+        cell.style.borderBottom = `1px solid ${styles.borderColor}`;
+      });
+    });
+  }
+  
+  /**
+   * Create filter controls for the table
+   */
+  private createFilterControls(): void {
+    const filterContainer = document.createElement('div');
+    filterContainer.className = 'filter-container';
+    filterContainer.style.marginBottom = '15px';
+    filterContainer.style.display = 'flex';
+    filterContainer.style.alignItems = 'center';
+    
+    // Create search label
+    const searchLabel = document.createElement('label');
+    searchLabel.textContent = 'Search: ';
+    searchLabel.style.marginRight = '8px';
+    filterContainer.appendChild(searchLabel);
+    
+    // Create search input
+    const searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.placeholder = 'Filter table...';
+    searchInput.style.padding = '6px 10px';
+    searchInput.style.border = '1px solid #ddd';
+    searchInput.style.borderRadius = '4px';
+    searchInput.style.flexGrow = '1';
+    
+    // Add event listener for filtering
+    searchInput.addEventListener('input', (event) => {
+      this.searchTerm = (event.target as HTMLInputElement).value.toLowerCase();
+      this.currentPage = 1; // Reset to first page when filtering
+      this.renderTableBody();
+      
+      // Update pagination if enabled
+      if (this.options.paginate) {
+        this.updatePagination();
+      }
+    });
+    
+    filterContainer.appendChild(searchInput);
+    this.container.appendChild(filterContainer);
+  }
+  
+  /**
+   * Create the main table element
+   */
+  private createTable(): void {
+    // Create table element
+    this.table = document.createElement('table');
+    this.table.className = 'table-visualization';
     
     // Create table header
     const thead = document.createElement('thead');
@@ -75,570 +252,465 @@ export class TableVisualization {
     // Add row number header if enabled
     if (this.options.showRowNumbers) {
       const rowNumberHeader = document.createElement('th');
-      rowNumberHeader.className = 'row-number-header';
       rowNumberHeader.textContent = '#';
+      rowNumberHeader.style.width = '50px';
       headerRow.appendChild(rowNumberHeader);
     }
     
     // Add column headers
-    headers.forEach(header => {
+    this.headers.forEach(header => {
       const th = document.createElement('th');
       th.textContent = header;
-      th.dataset.column = header;
       
-      // Add sorting functionality if enabled
+      // Add sort functionality if enabled
       if (this.options.sortable) {
-        th.classList.add('sortable');
+        th.style.cursor = 'pointer';
+        
+        // Add sort indicator
+        const sortIndicator = document.createElement('span');
+        sortIndicator.className = 'sort-indicator';
+        sortIndicator.style.marginLeft = '5px';
+        sortIndicator.textContent = '';
+        th.appendChild(sortIndicator);
+        
+        // Update sort indicator if this is the sort column
+        if (header === this.sortColumn) {
+          sortIndicator.textContent = this.sortDirection === 'ascending' ? '↑' : '↓';
+        }
+        
+        // Add click event for sorting
         th.addEventListener('click', () => this.sortTable(header));
       }
       
-      // Set width if specified
-      if (this.options.columnWidths && this.options.columnWidths[header]) {
-        th.style.width = this.options.columnWidths[header];
+      // Add resize functionality if enabled
+      if (this.options.resizableColumns) {
+        th.style.position = 'relative';
+        
+        const resizeHandle = document.createElement('div');
+        resizeHandle.className = 'resize-handle';
+        resizeHandle.style.position = 'absolute';
+        resizeHandle.style.right = '0';
+        resizeHandle.style.top = '0';
+        resizeHandle.style.bottom = '0';
+        resizeHandle.style.width = '5px';
+        resizeHandle.style.cursor = 'col-resize';
+        
+        // Add resize functionality
+        this.addResizeHandlers(resizeHandle, th);
+        
+        th.appendChild(resizeHandle);
       }
       
       headerRow.appendChild(th);
     });
     
     thead.appendChild(headerRow);
-    table.appendChild(thead);
-    
-    // Add filter row if filtering is enabled
-    if (this.options.filterable) {
-      const filterRow = document.createElement('tr');
-      filterRow.className = 'filter-row';
-      
-      // Add empty cell for row number column if enabled
-      if (this.options.showRowNumbers) {
-        const emptyCell = document.createElement('th');
-        filterRow.appendChild(emptyCell);
-      }
-      
-      // Add filter inputs for each column
-      headers.forEach(header => {
-        const filterCell = document.createElement('th');
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.placeholder = `Filter ${header}...`;
-        input.dataset.column = header;
-        input.addEventListener('input', (e) => {
-          this.filterValues[header] = (e.target as HTMLInputElement).value;
-          this.applyFilters();
-        });
-        
-        filterCell.appendChild(input);
-        filterRow.appendChild(filterCell);
-      });
-      
-      thead.appendChild(filterRow);
-    }
+    this.table.appendChild(thead);
     
     // Create table body
     const tbody = document.createElement('tbody');
+    this.table.appendChild(tbody);
     
-    // Add rows with pagination if enabled
-    const displayedRows = this.options.paginate 
-      ? rows.slice(this.currentPage * (this.options.rowsPerPage || 10), (this.currentPage + 1) * (this.options.rowsPerPage || 10))
-      : rows;
+    // Render table body content
+    this.renderTableBody();
     
-    displayedRows.forEach((row, rowIndex) => {
+    // Add table to container
+    this.tableContainer!.appendChild(this.table);
+  }
+  
+  /**
+   * Render the table body content
+   */
+  private renderTableBody(): void {
+    if (!this.table) return;
+    
+    const tbody = this.table.querySelector('tbody');
+    if (!tbody) return;
+    
+    // Clear existing content
+    tbody.innerHTML = '';
+    
+    // Filter rows if search term is present
+    let filteredRows = this.rows;
+    if (this.searchTerm) {
+      filteredRows = this.rows.filter(row => {
+        return Object.values(row).some(value => {
+          if (value === null || value === undefined) return false;
+          return String(value).toLowerCase().includes(this.searchTerm);
+        });
+      });
+    }
+    
+    // Sort rows if sort column is set
+    if (this.sortColumn) {
+      filteredRows = [...filteredRows].sort((a, b) => {
+        const valueA = a[this.sortColumn!] || '';
+        const valueB = b[this.sortColumn!] || '';
+        
+        // Determine sort order based on data type
+        if (typeof valueA === 'number' && typeof valueB === 'number') {
+          return this.sortDirection === 'ascending' 
+            ? valueA - valueB 
+            : valueB - valueA;
+        } else {
+          const strA = String(valueA).toLowerCase();
+          const strB = String(valueB).toLowerCase();
+          
+          return this.sortDirection === 'ascending' 
+            ? strA.localeCompare(strB) 
+            : strB.localeCompare(strA);
+        }
+      });
+    }
+    
+    // Apply pagination if enabled
+    let displayedRows = filteredRows;
+    if (this.options.paginate) {
+      const startIndex = (this.currentPage - 1) * this.options.rowsPerPage!;
+      displayedRows = filteredRows.slice(
+        startIndex,
+        startIndex + this.options.rowsPerPage!
+      );
+    }
+    
+    // Create rows
+    displayedRows.forEach((rowData, displayIndex) => {
+      const rowIndex = this.rows.indexOf(rowData); // Original index for highlighting
       const tr = document.createElement('tr');
-      tr.dataset.rowIndex = String(rowIndex);
+      
+      // Make row selectable if enabled
+      if (this.options.selectable) {
+        tr.style.cursor = 'pointer';
+        tr.addEventListener('click', () => {
+          if (this.options.onRowSelect) {
+            this.options.onRowSelect(rowData, rowIndex);
+          }
+          
+          // Toggle selected class
+          const selectedRows = tbody.querySelectorAll('tr.selected');
+          selectedRows.forEach(row => row.classList.remove('selected'));
+          tr.classList.add('selected');
+        });
+      }
       
       // Add row number if enabled
       if (this.options.showRowNumbers) {
         const rowNumberCell = document.createElement('td');
-        rowNumberCell.className = 'row-number';
-        rowNumberCell.textContent = String(this.currentPage * (this.options.rowsPerPage || 10) + rowIndex + 1);
+        rowNumberCell.textContent = (this.options.paginate 
+          ? (this.currentPage - 1) * this.options.rowsPerPage! + displayIndex + 1 
+          : displayIndex + 1).toString();
+        rowNumberCell.style.textAlign = 'center';
         tr.appendChild(rowNumberCell);
       }
       
-      // Add cells for each column
-      headers.forEach(header => {
+      // Add data cells
+      this.headers.forEach(header => {
         const td = document.createElement('td');
-        const value = row[header];
         
-        // Format cell value if formatter is provided
+        // Format cell content if formatter is provided
         if (this.options.formatCell) {
-          td.innerHTML = this.options.formatCell(value, header, row);
+          td.innerHTML = this.options.formatCell(rowData[header], header, rowData);
         } else {
-          td.textContent = value !== undefined && value !== null ? String(value) : '';
+          // Handle null or undefined values
+          const value = rowData[header];
+          td.textContent = value !== null && value !== undefined ? String(value) : '';
         }
         
-        // Add custom styling if style function is provided
+        // Apply cell styling if provided
         if (this.options.cellStyleFunction) {
-          const styles = this.options.cellStyleFunction(value, header, row);
-          Object.entries(styles).forEach(([prop, val]) => {
-            td.style[prop as any] = val as string;
-          });
+          const style = this.options.cellStyleFunction(rowData[header], header, rowData);
+          Object.assign(td.style, style);
         }
         
-        // Make cell editable if enabled
-        if (this.options.editable) {
-          td.contentEditable = 'true';
-          td.addEventListener('blur', (e) => {
-            const newValue = (e.target as HTMLTableCellElement).textContent || '';
-            // Update the data
-            // Implementation would depend on how you want to handle data updates
-          });
-        }
+        // Check if cell should be highlighted
+        const isHighlighted = this.highlightedCells.some(cell => 
+          cell.rowIndex === rowIndex && cell.columnName === header
+        );
         
-        // Highlight cell if it's in the highlighted cells list
-        if (this.options.highlightCells) {
-          const isHighlighted = this.options.highlightCells.some(cell => 
-            cell.rowIndex === rowIndex && cell.columnName === header
-          );
-          
-          if (isHighlighted) {
-            td.classList.add('highlighted');
-          }
+        if (isHighlighted) {
+          td.style.backgroundColor = this.options.theme === 'dark' ? '#4b513d' : '#fffacd';
+          td.style.fontWeight = 'bold';
         }
         
         tr.appendChild(td);
       });
       
-      // Add row selection handling if enabled
-      if (this.options.selectable) {
-        tr.classList.add('selectable');
-        tr.addEventListener('click', () => {
-          const allRows = tbody.querySelectorAll('tr');
-          allRows.forEach(row => row.classList.remove('selected'));
-          tr.classList.add('selected');
-          
-          if (this.options.onRowSelect) {
-            this.options.onRowSelect(row, rowIndex);
-          }
-        });
-      }
-      
       tbody.appendChild(tr);
     });
     
-    table.appendChild(tbody);
-    
-    // Add pagination controls if enabled
-    if (this.options.paginate) {
-      const footer = document.createElement('tfoot');
-      const paginationRow = document.createElement('tr');
-      const paginationCell = document.createElement('td');
-      paginationCell.colSpan = headers.length + (this.options.showRowNumbers ? 1 : 0);
-      
-      const totalPages = Math.ceil(rows.length / (this.options.rowsPerPage || 10));
-      
-      // Create pagination controls
-      const paginationControls = document.createElement('div');
-      paginationControls.className = 'pagination-controls';
-      
-      // Previous button
-      const prevButton = document.createElement('button');
-      prevButton.textContent = '← Previous';
-      prevButton.disabled = this.currentPage === 0;
-      prevButton.addEventListener('click', () => {
-        if (this.currentPage > 0) {
-          this.currentPage--;
-          this.render();
-        }
-      });
-      
-      // Next button
-      const nextButton = document.createElement('button');
-      nextButton.textContent = 'Next →';
-      nextButton.disabled = this.currentPage >= totalPages - 1;
-      nextButton.addEventListener('click', () => {
-        if (this.currentPage < totalPages - 1) {
-          this.currentPage++;
-          this.render();
-        }
-      });
-      
-      // Page indicator
-      const pageIndicator = document.createElement('span');
-      pageIndicator.textContent = `Page ${this.currentPage + 1} of ${totalPages}`;
-      
-      paginationControls.appendChild(prevButton);
-      paginationControls.appendChild(pageIndicator);
-      paginationControls.appendChild(nextButton);
-      
-      paginationCell.appendChild(paginationControls);
-      paginationRow.appendChild(paginationCell);
-      footer.appendChild(paginationRow);
-      table.appendChild(footer);
+    // Display message if no rows match filter
+    if (displayedRows.length === 0) {
+      const emptyRow = document.createElement('tr');
+      const emptyCell = document.createElement('td');
+      emptyCell.colSpan = this.options.showRowNumbers ? this.headers.length + 1 : this.headers.length;
+      emptyCell.textContent = 'No matching records found';
+      emptyCell.style.textAlign = 'center';
+      emptyCell.style.padding = '20px';
+      emptyRow.appendChild(emptyCell);
+      tbody.appendChild(emptyRow);
     }
-    
-    return table;
   }
-
+  
   /**
-   * Sorts the table by a specific column
-   * @param columnName The column header to sort by
+   * Sort the table by a column
+   * @param columnName Column to sort by
    */
   private sortTable(columnName: string): void {
-    // Toggle sort direction
-    if (this.sortState && this.sortState.column === columnName) {
-      this.sortState.direction = this.sortState.direction === 'asc' ? 'desc' : 'asc';
+    // Toggle sort direction if already sorted by this column
+    if (this.sortColumn === columnName) {
+      this.sortDirection = this.sortDirection === 'ascending' ? 'descending' : 'ascending';
     } else {
-      this.sortState = { column: columnName, direction: 'asc' };
+      this.sortColumn = columnName;
+      this.sortDirection = 'ascending';
     }
     
-    // Apply sorting
-    this.options.rows.sort((a, b) => {
-      const valueA = a[columnName];
-      const valueB = b[columnName];
-      
-      // Compare based on data type
-      let comparison = 0;
-      
-      if (typeof valueA === 'number' && typeof valueB === 'number') {
-        comparison = valueA - valueB;
-      } else if (valueA instanceof Date && valueB instanceof Date) {
-        comparison = valueA.getTime() - valueB.getTime();
-      } else {
-        const stringA = String(valueA || '').toLowerCase();
-        const stringB = String(valueB || '').toLowerCase();
-        comparison = stringA.localeCompare(stringB);
-      }
-      
-      // Apply sort direction
-      return this.sortState!.direction === 'asc' ? comparison : -comparison;
-    });
-    
-    // Update UI
-    this.render();
-    
-    // Update sort indicators in the UI
-    if (this.tableElement) {
-      const headers = this.tableElement.querySelectorAll('th.sortable');
-      headers.forEach(header => {
-        header.classList.remove('sort-asc', 'sort-desc');
-        
-        if (header.getAttribute('data-column') === columnName) {
-          header.classList.add(this.sortState!.direction === 'asc' ? 'sort-asc' : 'sort-desc');
-        }
-      });
-    }
-  }
-
-  /**
-   * Applies filters to the table data
-   */
-  private applyFilters(): void {
-    // If no filters are active, no need to filter
-    const hasActiveFilters = Object.values(this.filterValues).some(value => value.length > 0);
-    if (!hasActiveFilters) {
-      // Reset to original data
-      this.render();
-      return;
-    }
-    
-    // Clone the original rows
-    const filteredRows = [...this.options.rows].filter(row => {
-      // Check each active filter
-      return Object.entries(this.filterValues).every(([column, filterValue]) => {
-        if (!filterValue) return true; // Skip inactive filters
-        
-        const cellValue = String(row[column] || '').toLowerCase();
-        return cellValue.includes(filterValue.toLowerCase());
-      });
-    });
-    
-    // Update the table with filtered data
-    // In a real implementation, we might want to update the data in place
-    // instead of re-rendering the entire table
-    this.currentPage = 0; // Reset to first page when filtering
-    this.render(filteredRows);
-  }
-
-  /**
-   * Applies highlighting to specific cells
-   * @param highlightCells Array of cell coordinates to highlight
-   */
-  public highlightCells(highlightCells: Array<{ rowIndex: number; columnName: string }>): void {
-    this.options.highlightCells = highlightCells;
-    
-    // Update highlighting in the existing table if available
-    if (this.tableElement) {
-      // Remove existing highlights
-      const allCells = this.tableElement.querySelectorAll('tbody td');
-      allCells.forEach(cell => cell.classList.remove('highlighted'));
-      
-      // Apply new highlights
-      highlightCells.forEach(({ rowIndex, columnName }) => {
-        const colIndex = this.options.headers.findIndex(h => h === columnName);
-        
-        if (colIndex !== -1) {
-          const row = this.tableElement!.querySelector(`tbody tr[data-row-index="${rowIndex}"]`);
-          if (row) {
-            const offset = this.options.showRowNumbers ? 1 : 0;
-            const cell = row.children[colIndex + offset] as HTMLElement;
-            if (cell) {
-              cell.classList.add('highlighted');
-            }
+    // Update sort indicators
+    if (this.table) {
+      const headerCells = this.table.querySelectorAll('th');
+      headerCells.forEach(cell => {
+        const sortIndicator = cell.querySelector('.sort-indicator');
+        if (sortIndicator) {
+          if (cell.textContent!.startsWith(columnName)) {
+            sortIndicator.textContent = this.sortDirection === 'ascending' ? '↑' : '↓';
+          } else {
+            sortIndicator.textContent = '';
           }
         }
       });
-    } else {
-      // If table doesn't exist yet, it will be rendered with highlights on next render
-      this.render();
+    }
+    
+    // Re-render table body with sorted data
+    this.renderTableBody();
+  }
+  
+  /**
+   * Create pagination controls
+   */
+  private createPagination(): void {
+    this.paginationContainer = document.createElement('div');
+    this.paginationContainer.className = 'pagination-container';
+    this.paginationContainer.style.marginTop = '15px';
+    this.paginationContainer.style.display = 'flex';
+    this.paginationContainer.style.justifyContent = 'center';
+    this.paginationContainer.style.alignItems = 'center';
+    
+    this.updatePagination();
+    this.container.appendChild(this.paginationContainer);
+  }
+  
+  /**
+   * Update pagination controls based on current data
+   */
+  private updatePagination(): void {
+    if (!this.paginationContainer) return;
+    
+    // Clear existing pagination
+    this.paginationContainer.innerHTML = '';
+    
+    // Filter rows based on search term
+    let filteredRows = this.rows;
+    if (this.searchTerm) {
+      filteredRows = this.rows.filter(row => {
+        return Object.values(row).some(value => {
+          if (value === null || value === undefined) return false;
+          return String(value).toLowerCase().includes(this.searchTerm);
+        });
+      });
+    }
+    
+    // Calculate total pages
+    const totalPages = Math.max(1, Math.ceil(filteredRows.length / this.options.rowsPerPage!));
+    
+    // Ensure current page is valid
+    this.currentPage = Math.min(Math.max(1, this.currentPage), totalPages);
+    
+    // Create pagination controls
+    
+    // First page button
+    const firstButton = document.createElement('button');
+    firstButton.innerHTML = '&laquo;';
+    firstButton.title = 'First page';
+    firstButton.disabled = this.currentPage === 1;
+    firstButton.addEventListener('click', () => {
+      this.currentPage = 1;
+      this.renderTableBody();
+      this.updatePagination();
+    });
+    
+    // Previous page button
+    const prevButton = document.createElement('button');
+    prevButton.innerHTML = '&lsaquo;';
+    prevButton.title = 'Previous page';
+    prevButton.disabled = this.currentPage === 1;
+    prevButton.addEventListener('click', () => {
+      this.currentPage--;
+      this.renderTableBody();
+      this.updatePagination();
+    });
+    
+    // Add buttons to container
+    this.paginationContainer.appendChild(firstButton);
+    this.paginationContainer.appendChild(prevButton);
+    
+    // Page number buttons
+    const maxPageButtons = 5; // Maximum number of page buttons to show
+    let startPage = Math.max(1, this.currentPage - Math.floor(maxPageButtons / 2));
+    const endPage = Math.min(totalPages, startPage + maxPageButtons - 1);
+    
+    // Adjust start page if we can't show enough pages
+    startPage = Math.max(1, endPage - maxPageButtons + 1);
+    
+    // Create page buttons
+    for (let i = startPage; i <= endPage; i++) {
+      const pageButton = document.createElement('button');
+      pageButton.textContent = i.toString();
+      pageButton.title = `Page ${i}`;
+      
+      if (i === this.currentPage) {
+        pageButton.disabled = true;
+        pageButton.style.fontWeight = 'bold';
+        pageButton.style.backgroundColor = this.options.theme === 'dark' ? '#666' : '#ddd';
+      }
+      
+      pageButton.addEventListener('click', () => {
+        this.currentPage = i;
+        this.renderTableBody();
+        this.updatePagination();
+      });
+      
+      this.paginationContainer.appendChild(pageButton);
+    }
+    
+    // Next page button
+    const nextButton = document.createElement('button');
+    nextButton.innerHTML = '&rsaquo;';
+    nextButton.title = 'Next page';
+    nextButton.disabled = this.currentPage === totalPages;
+    nextButton.addEventListener('click', () => {
+      this.currentPage++;
+      this.renderTableBody();
+      this.updatePagination();
+    });
+    
+    // Last page button
+    const lastButton = document.createElement('button');
+    lastButton.innerHTML = '&raquo;';
+    lastButton.title = 'Last page';
+    lastButton.disabled = this.currentPage === totalPages;
+    lastButton.addEventListener('click', () => {
+      this.currentPage = totalPages;
+      this.renderTableBody();
+      this.updatePagination();
+    });
+    
+    // Add buttons to container
+    this.paginationContainer.appendChild(nextButton);
+    this.paginationContainer.appendChild(lastButton);
+    
+    // Style pagination buttons
+    const buttons = this.paginationContainer.querySelectorAll('button');
+    buttons.forEach(button => {
+      button.style.margin = '0 4px';
+      button.style.padding = '6px 12px';
+      button.style.border = '1px solid #ddd';
+      button.style.borderRadius = '3px';
+      button.style.backgroundColor = this.options.theme === 'dark' ? '#444' : '#f5f5f5';
+      button.style.color = this.options.theme === 'dark' ? '#e0e0e0' : '#333';
+      button.style.cursor = button.disabled ? 'default' : 'pointer';
+      
+      if (!button.disabled) {
+        button.addEventListener('mouseenter', () => {
+          button.style.backgroundColor = this.options.theme === 'dark' ? '#555' : '#e0e0e0';
+        });
+        
+        button.addEventListener('mouseleave', () => {
+          button.style.backgroundColor = this.options.theme === 'dark' ? '#444' : '#f5f5f5';
+        });
+      }
+    });
+    
+    // Add page info
+    const pageInfo = document.createElement('span');
+    pageInfo.style.marginLeft = '10px';
+    pageInfo.textContent = `Page ${this.currentPage} of ${totalPages} (${filteredRows.length} records)`;
+    this.paginationContainer.appendChild(pageInfo);
+  }
+  
+  /**
+   * Add resize handlers to a column header
+   * @param handle Resize handle element
+   * @param th Header cell element
+   */
+  private addResizeHandlers(handle: HTMLDivElement, th: HTMLTableCellElement): void {
+    let startX: number;
+    let startWidth: number;
+    
+    const startResize = (e: MouseEvent) => {
+      startX = e.pageX;
+      startWidth = th.offsetWidth;
+      document.addEventListener('mousemove', resize);
+      document.addEventListener('mouseup', stopResize);
+      
+      // Prevent text selection during resize
+      document.body.style.userSelect = 'none';
+    };
+    
+    const resize = (e: MouseEvent) => {
+      const width = startWidth + (e.pageX - startX);
+      th.style.width = `${Math.max(50, width)}px`; // Enforce minimum width
+    };
+    
+    const stopResize = () => {
+      document.removeEventListener('mousemove', resize);
+      document.removeEventListener('mouseup', stopResize);
+      document.body.style.userSelect = '';
+    };
+    
+    handle.addEventListener('mousedown', startResize);
+  }
+  
+  /**
+   * Update the table with new data
+   * @param rows New row data
+   */
+  public updateData(rows: Record<string, any>[]): void {
+    this.rows = rows;
+    this.currentPage = 1; // Reset to first page
+    this.renderTableBody();
+    
+    // Update pagination if enabled
+    if (this.options.paginate && this.paginationContainer) {
+      this.updatePagination();
     }
   }
-
+  
   /**
-   * Renders the table visualization with optional custom data
-   * @param customRows Optional custom rows to display instead of the configured rows
+   * Highlight specific cells in the table
+   * @param cells Array of cells to highlight
    */
-  public render(customRows?: Array<Record<string, any>>): void {
-    // Clear previous content
-    this.container.innerHTML = '';
-    
-    // Use custom rows if provided, otherwise use the configured rows
-    const rowsToRender = customRows || this.options.rows;
-    
-    // Create a new table with the current options
-    const currentOptions = { ...this.options, rows: rowsToRender };
-    this.tableElement = this.createTable();
-    
-    // Append the table to the container
-    this.container.appendChild(this.tableElement);
-    
-    // Add general styles if not already added
-    this.addStyles();
+  public highlightCells(cells: Array<{ rowIndex: number, columnName: string }>): void {
+    this.highlightedCells = cells;
+    this.renderTableBody();
   }
-
+  
   /**
-   * Adds CSS styles for the table visualization
-   */
-  private addStyles(): void {
-    // Check if styles are already added
-    if (document.getElementById('table-visualization-styles')) return;
-    
-    // Create style element
-    const style = document.createElement('style');
-    style.id = 'table-visualization-styles';
-    
-    // Define CSS rules
-    style.textContent = `
-      .comparison-table {
-        border-collapse: collapse;
-        width: 100%;
-        border: 1px solid #ddd;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        font-size: 14px;
-      }
-      
-      .comparison-table.responsive {
-        overflow-x: auto;
-        display: block;
-      }
-      
-      .comparison-table caption {
-        font-weight: bold;
-        font-size: 1.1em;
-        margin-bottom: 8px;
-        text-align: left;
-      }
-      
-      .comparison-table th {
-        background-color: #f5f5f5;
-        border: 1px solid #ddd;
-        padding: 10px;
-        text-align: left;
-      }
-      
-      .comparison-table td {
-        border: 1px solid #ddd;
-        padding: 8px;
-        text-align: left;
-      }
-      
-      .comparison-table tr:nth-child(even) {
-        background-color: #f9f9f9;
-      }
-      
-      .comparison-table tr:hover {
-        background-color: #f1f1f1;
-      }
-      
-      .comparison-table th.sortable {
-        cursor: pointer;
-        position: relative;
-        padding-right: 18px;
-      }
-      
-      .comparison-table th.sortable:after {
-        content: "↕";
-        position: absolute;
-        right: 5px;
-        color: #999;
-      }
-      
-      .comparison-table th.sort-asc:after {
-        content: "↑";
-        color: #333;
-      }
-      
-      .comparison-table th.sort-desc:after {
-        content: "↓";
-        color: #333;
-      }
-      
-      .comparison-table td.highlighted,
-      .comparison-table th.highlighted {
-        background-color: #fffde7;
-        font-weight: bold;
-      }
-      
-      .comparison-table .filter-row input {
-        width: calc(100% - 16px);
-        padding: 5px 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-      }
-      
-      .comparison-table .pagination-controls {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 10px;
-        gap: 10px;
-      }
-      
-      .comparison-table .pagination-controls button {
-        padding: 5px 10px;
-        border: 1px solid #ddd;
-        background: #f5f5f5;
-        cursor: pointer;
-        border-radius: 4px;
-      }
-      
-      .comparison-table .pagination-controls button:disabled {
-        cursor: not-allowed;
-        opacity: 0.5;
-      }
-      
-      .comparison-table tr.selectable {
-        cursor: pointer;
-      }
-      
-      .comparison-table tr.selected {
-        background-color: #e3f2fd;
-      }
-      
-      .comparison-table .row-number {
-        background-color: #f5f5f5;
-        font-weight: bold;
-        text-align: center;
-        width: 40px;
-      }
-      
-      .comparison-table .row-number-header {
-        text-align: center;
-        width: 40px;
-      }
-    `;
-    
-    // Add style to document
-    document.head.appendChild(style);
-  }
-
-  /**
-   * Updates the table data and rerenders
-   * @param data New row data
-   */
-  public updateData(rows: Array<Record<string, any>>): void {
-    this.options.rows = rows;
-    this.currentPage = 0; // Reset to first page
-    this.filterValues = {}; // Clear filters
-    this.sortState = null; // Clear sorting
-    this.render();
-  }
-
-  /**
-   * Updates column headers and rerenders
-   * @param headers New column headers
-   */
-  public updateHeaders(headers: string[]): void {
-    this.options.headers = headers;
-    this.currentPage = 0;
-    this.filterValues = {};
-    this.sortState = null;
-    this.render();
-  }
-
-  /**
-   * Updates visualization options and reapplies them
-   * @param options New visualization options
+   * Update visualization options
+   * @param options New options
    */
   public updateOptions(options: Partial<TableVisualizationOptions>): void {
     this.options = { ...this.options, ...options };
-    this.render();
+    
+    // Re-initialize visualization with new options
+    this.initializeVisualization();
   }
-
+  
   /**
-   * Gets the currently displayed data
-   * @returns The current table data
-   */
-  public getData(): Array<Record<string, any>> {
-    return [...this.options.rows];
-  }
-
-  /**
-   * Exports the table data as CSV
-   * @returns CSV string of the table data
-   */
-  public exportCSV(): string {
-    const { headers, rows } = this.options;
-    
-    // Create header row
-    const csvContent = [
-      // Add headers
-      headers.join(','),
-      
-      // Add data rows
-      ...rows.map(row => 
-        headers.map(header => {
-          const value = row[header];
-          // Escape commas, quotes, and wrap in quotes if needed
-          if (value === null || value === undefined) return '';
-          
-          const stringVal = String(value);
-          return stringVal.includes(',') || stringVal.includes('"') || stringVal.includes('\n')
-            ? `"${stringVal.replace(/"/g, '""')}"`
-            : stringVal;
-        }).join(',')
-      )
-    ].join('\n');
-    
-    return csvContent;
-  }
-
-  /**
-   * Exports the table as HTML
-   * @returns HTML string of the table
-   */
-  public exportHTML(): string {
-    if (!this.tableElement) return '';
-    
-    // Clone the table to avoid modifying the displayed one
-    const clone = this.tableElement.cloneNode(true) as HTMLTableElement;
-    
-    // Remove filter inputs and pagination controls if present
-    const filterRow = clone.querySelector('.filter-row');
-    if (filterRow) filterRow.remove();
-    
-    const paginationControls = clone.querySelector('.pagination-controls');
-    if (paginationControls) {
-      const parentRow = paginationControls.closest('tr');
-      if (parentRow) parentRow.remove();
-    }
-    
-    return clone.outerHTML;
-  }
-
-  /**
-   * Destroys the visualization and cleans up resources
+   * Clean up resources when the visualization is no longer needed
    */
   public destroy(): void {
-    this.container.innerHTML = '';
-    this.tableElement = null;
+    // Clear the container
+    if (this.container) {
+      this.container.innerHTML = '';
+    }
   }
 }

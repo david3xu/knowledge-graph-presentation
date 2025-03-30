@@ -1,0 +1,80 @@
+classDiagram
+    class ModuleOptions {
+        <<interface>>
+        +[key: string]: any
+    }
+    
+    class DataTransformer {
+        <<interface>>
+        +transformContent(contentId: string, options?: any): any
+        +handleTransformationError(error: Error, contentId: string): any
+    }
+    
+    class ConfigFactory {
+        <<interface>>
+        +createConfig(visualizationType: string, data: any, options?: any): any
+        +extendConfig(baseConfig: any, overrides: any): any
+    }
+    
+    class SlideFactory {
+        <<interface>>
+        +createSlide(id: string, title: string, content: any, visualizationConfig: any, options?: any): SlideConfig
+        +createSlideGroup(title: string, id: string, slides: SlideConfig[], options?: any): SlideGroup
+    }
+    
+    class ModuleTemplate~T~ {
+        <<interface>>
+        +createSlides(options: T): SlideGroup
+    }
+    
+    class BaseDataTransformer {
+        <<abstract>>
+        +transformContent(contentId: string, options?: any): any
+        +handleTransformationError(error: Error, contentId: string): any
+        #getContentFromRegistry(contentId: string): any
+        #abstract transformContentImpl(rawContent: any, options?: any): any
+    }
+    
+    class BaseConfigFactory {
+        <<abstract>>
+        +createConfig(visualizationType: string, data: any, options?: any): any
+        +extendConfig(baseConfig: any, overrides: any): any
+        #getBaseConfig(visualizationType: string): any
+        #deepMerge(target: any, source: any): any
+        #abstract createDomainSpecificConfig(visualizationType: string, data: any, options?: any): any
+    }
+    
+    class BaseSlideFactory {
+        <<abstract>>
+        +createSlide(id: string, title: string, content: any, visualizationConfig: any, options?: any): SlideConfig
+        +createSlideGroup(title: string, id: string, slides: SlideConfig[], options?: any): SlideGroup
+        #createSlideContent(content: any): SlideContent
+        #inferVisualizationType(config: any): VisualizationType
+        #abstract createDomainSlide(type: string, content: any, options?: any): SlideConfig
+    }
+    
+    class BaseModuleTemplate~T~ {
+        <<abstract>>
+        #dataTransformer: DataTransformer
+        #configFactory: ConfigFactory
+        #slideFactory: SlideFactory
+        +constructor(dataTransformer: DataTransformer, configFactory: ConfigFactory, slideFactory: SlideFactory)
+        +abstract createSlides(options: T): SlideGroup
+        #getModuleMetadata(metadataId: string): any
+    }
+    
+    class ModuleFactory {
+        +static createModule~M,D,C,S,O~(ModuleClass, DataTransformerClass, ConfigFactoryClass, SlideFactoryClass): M
+    }
+    
+    DataTransformer <|.. BaseDataTransformer
+    ConfigFactory <|.. BaseConfigFactory
+    SlideFactory <|.. BaseSlideFactory
+    ModuleTemplate <|.. BaseModuleTemplate
+    
+    BaseModuleTemplate ..> DataTransformer : uses
+    BaseModuleTemplate ..> ConfigFactory : uses
+    BaseModuleTemplate ..> SlideFactory : uses
+    
+    ModuleFactory ..> BaseModuleTemplate : creates
+    ModuleOptions <.. ModuleTemplate : extends

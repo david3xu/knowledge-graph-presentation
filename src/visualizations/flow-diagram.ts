@@ -1,956 +1,1317 @@
 /**
  * Flow Diagram Visualization Component
- * Creates interactive flow diagrams for process visualization
+ * Renders interactive flow diagrams for knowledge graph processes and architectures
  */
-import * as d3 from 'd3';
 import { FlowDiagramVisualizationOptions } from '../types/chart-config';
+import * as d3 from 'd3';
+import { SimulationNodeDatum } from 'd3';
 
-// Extend the imported interface with additional properties
-interface ExtendedFlowDiagramOptions extends FlowDiagramVisualizationOptions {
-  zoomable?: boolean;
+/**
+ * Node data interface for flow diagrams
+ */
+interface FlowNode {
+  id: string;
+  label: string;
+  type: 'process' | 'decision' | 'start' | 'end' | 'io' | 'custom';
+  position?: { x: number; y: number };
+  width?: number;
+  height?: number;
+  properties?: Record<string, any>;
+  [key: string]: any;
 }
 
 /**
- * Core visualization class for rendering process flow diagrams
+ * Edge data interface for flow diagrams
  */
+interface FlowEdge {
+  from: string;
+  to: string;
+  label?: string;
+  style?: 'solid' | 'dashed' | 'dotted';
+  [key: string]: any;
+}
+
+/**
+ * Node implementation with positioning and rendering information
+ */
+interface PositionedNode extends d3.SimulationNodeDatum, FlowNode {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  shape: string;
+  pathData?: string;
+  textPosition?: { x: number; y: number };
+}
+
+/**
+ * Edge implementation with positioning information
+ */
+interface PositionedEdge extends d3.SimulationLinkDatum<PositionedNode>, FlowEdge {
+  source: PositionedNode;
+  target: PositionedNode;
+  points: Array<{ x: number; y: number }>;
+  labelPosition?: { x: number; y: number };
+}
+
 export class FlowDiagramVisualization {
   private container: HTMLElement;
-  private options: ExtendedFlowDiagramOptions;
-  private svg: d3.Selection<SVGSVGElement, unknown, null, undefined> | null = null;
+  private svg!: d3.Selection<SVGSVGElement, unknown, null, undefined>;
+  private nodesGroup!: d3.Selection<SVGGElement, unknown, null, undefined>;
+  private edgesGroup!: d3.Selection<SVGGElement, unknown, null, undefined>;
   private width: number;
   private height: number;
-  private margin: { top: number; right: number; bottom: number; left: number };
-  private nodesLayer: d3.Selection<SVGGElement, unknown, null, undefined> | null = null;
-  private edgesLayer: d3.Selection<SVGGElement, unknown, null, undefined> | null = null;
-  private currentTransform: d3.ZoomTransform | null = null;
-
+  private nodes: PositionedNode[] = [];
+  private edges: PositionedEdge[] = [];
+  private options: FlowDiagramVisualizationOptions;
+  private zoom!: d3.ZoomBehavior<SVGSVGElement, unknown>;
+  private tooltip!: d3.Selection<HTMLDivElement, unknown, null, undefined>;
+  private highlightedNodeId: string | null = null;
+  private dagLayout = false;
+  
   /**
-   * Node shape generators
+   * Creates a new flow diagram visualization
+   * @param options Visualization options
    */
-  private nodeShapes = {
-    process: (width: number, height: number): string => {
-      return this.roundedRect(0, 0, width, height, 5);
-    },
-    
-    decision: (width: number, height: number): string => {
-      return `M${width/2},0 L${width},${height/2} L${width/2},${height} L0,${height/2} Z`;
-    },
-    
-    start: (width: number, height: number): string => {
-      const rx = height / 2;
-      return `M${rx},0 H${width-rx} A${rx},${rx} 0 0 1 ${width},${height/2} A${rx},${rx} 0 0 1 ${width-rx},${height} H${rx} A${rx},${rx} 0 0 1 0,${height/2} A${rx},${rx} 0 0 1 ${rx},0 Z`;
-    },
-    
-    end: (width: number, height: number): string => {
-      const rx = height / 2;
-      return `M${rx},0 H${width-rx} A${rx},${rx} 0 0 1 ${width},${height/2} A${rx},${rx} 0 0 1 ${width-rx},${height} H${rx} A${rx},${rx} 0 0 1 0,${height/2} A${rx},${rx} 0 0 1 ${rx},0 Z`;
-    },
-    
-    io: (width: number, height: number): string => {
-      const offset = height * 0.15;
-      return `M${offset},0 H${width} L${width-offset},${height} H0 Z`;
-    },
-    
-    custom: (width: number, height: number): string => {
-      return this.roundedRect(0, 0, width, height, 5);
-    }
-  };
-
-  /**
-   * Creates a new flow diagram visualization instance
-   * @param options Configuration options for the flow diagram visualization
-   */
-  constructor(options: ExtendedFlowDiagramOptions) {
+  constructor(options: FlowDiagramVisualizationOptions) {
     this.container = options.container;
-    this.options = this.applyDefaultOptions(options);
+    this.width = options.width || this.container.clientWidth || 600;
+    this.height = options.height || this.container.clientHeight || 400;
+    this.options = this.initializeOptions(options);
     
-    this.margin = this.options.margin || { top: 40, right: 40, bottom: 40, left: 40 };
-    this.width = (this.options.width || this.container.clientWidth) - this.margin.left - this.margin.right;
-    this.height = (this.options.height || 600) - this.margin.top - this.margin.bottom;
+    // Determine if we should use DAG layout
+    this.dagLayout = this.options.direction === 'TB' || 
+                     this.options.direction === 'BT' || 
+                     this.options.direction === 'LR' || 
+                     this.options.direction === 'RL';
+    
+    // Process input data
+    this.processNodes(options.nodes);
+    this.processEdges(options.edges);
+    
+    // Perform layout if auto layout is enabled
+    if (this.options.autoLayout) {
+      this.performLayout();
+    }
+    
+    // Initialize the visualization
+    this.initializeVisualization();
   }
-
+  
   /**
-   * Applies default options to user-provided options
-   * @param options User options
-   * @returns Merged options with defaults applied
+   * Initialize visualization options with defaults
+   * @param options User-provided options
    */
-  private applyDefaultOptions(options: ExtendedFlowDiagramOptions): ExtendedFlowDiagramOptions {
-    const defaults: Partial<ExtendedFlowDiagramOptions> = {
-      width: this.container.clientWidth,
-      height: 600,
-      responsive: true,
-      margin: { top: 40, right: 40, bottom: 40, left: 40 },
-      animationDuration: 500,
-      theme: 'light',
-      colorScheme: ['#4285F4', '#EA4335', '#FBBC05', '#34A853', '#8AB4F8', '#F6AEA9', '#FDE293', '#A8DAB5'],
-      direction: 'TB',
-      autoLayout: true,
-      nodeSeparation: 50,
-      levelSeparation: 100,
-      rankAlignment: true,
-      draggable: true,
-      zoomable: true,
-      snapToGrid: false,
-      gridSize: 20,
-      showMiniMap: false,
-      fitToContainer: true,
-      processNodeStyle: {
-        fill: '#4285F4',
-        stroke: '#2965CC',
+  private initializeOptions(options: FlowDiagramVisualizationOptions): FlowDiagramVisualizationOptions {
+    // Default node styles by type
+    const defaultNodeStyles: Record<string, any> = {
+      process: {
+        fill: '#4C9AFF',
+        stroke: '#2684FF',
         strokeWidth: 2,
-        textColor: '#FFFFFF'
+        width: 120,
+        height: 60,
+        textColor: '#FFFFFF',
+        shape: 'rect'
       },
-      decisionNodeStyle: {
-        fill: '#FBBC05',
-        stroke: '#E2A604',
+      decision: {
+        fill: '#FFC400',
+        stroke: '#FF991F',
         strokeWidth: 2,
-        textColor: '#000000'
+        width: 100,
+        height: 100,
+        textColor: '#172B4D',
+        shape: 'diamond'
       },
-      startNodeStyle: {
-        fill: '#34A853',
-        stroke: '#2D9348',
+      start: {
+        fill: '#36B37E',
+        stroke: '#00875A',
         strokeWidth: 2,
-        textColor: '#FFFFFF'
+        width: 100,
+        height: 60,
+        textColor: '#FFFFFF',
+        shape: 'stadium'
       },
-      endNodeStyle: {
-        fill: '#EA4335',
-        stroke: '#B31412',
+      end: {
+        fill: '#FF5630',
+        stroke: '#DE350B',
         strokeWidth: 2,
-        textColor: '#FFFFFF'
+        width: 100,
+        height: 60,
+        textColor: '#FFFFFF',
+        shape: 'stadium'
       },
-      ioNodeStyle: {
-        fill: '#8AB4F8',
-        stroke: '#4285F4',
+      io: {
+        fill: '#6554C0',
+        stroke: '#403294',
         strokeWidth: 2,
-        textColor: '#000000'
+        width: 120,
+        height: 60,
+        textColor: '#FFFFFF',
+        shape: 'parallelogram'
       },
-      edgeStyle: {
-        stroke: '#888888',
+      custom: {
+        fill: '#79E2F2',
+        stroke: '#00B8D9',
         strokeWidth: 2,
-        arrowSize: 10,
-        textColor: '#333333'
+        width: 120,
+        height: 60,
+        textColor: '#172B4D',
+        shape: 'rect'
       }
     };
-
-    return { ...defaults, ...options };
-  }
-
-  /**
-   * Helper method to create rounded rectangle SVG path
-   * @param x X position
-   * @param y Y position
-   * @param width Width of rectangle
-   * @param height Height of rectangle
-   * @param radius Corner radius
-   * @returns SVG path string
-   */
-  private roundedRect(x: number, y: number, width: number, height: number, radius: number): string {
-    return `
-      M${x + radius},${y}
-      h${width - 2 * radius}
-      a${radius},${radius} 0 0 1 ${radius},${radius}
-      v${height - 2 * radius}
-      a${radius},${radius} 0 0 1 -${radius},${radius}
-      h${-width + 2 * radius}
-      a${radius},${radius} 0 0 1 -${radius},-${radius}
-      v${-height + 2 * radius}
-      a${radius},${radius} 0 0 1 ${radius},-${radius}
-      z
-    `;
-  }
-
-  /**
-   * Initializes the SVG container for the visualization
-   */
-  private initializeSVG(): void {
-    // Clear any existing visualization
-    d3.select(this.container).selectAll('svg').remove();
     
-    // Create SVG container
-    const svgContainer = d3.select(this.container)
+    // Default edge style
+    const defaultEdgeStyle = {
+      stroke: '#6B778C',
+      strokeWidth: 2,
+      arrowSize: 8,
+      textColor: '#172B4D',
+      fontSize: 12
+    };
+    
+    // Merge defaults with provided options
+    return {
+      ...options,
+      direction: options.direction || 'TB',
+      autoLayout: options.autoLayout !== false,
+      draggable: options.draggable !== false,
+      snapToGrid: options.snapToGrid !== false,
+      gridSize: options.gridSize || 20,
+      nodeSeparation: options.nodeSeparation || 50,
+      levelSeparation: options.levelSeparation || 100,
+      rankAlignment: options.rankAlignment !== false,
+      processNodeStyle: { ...defaultNodeStyles.process, ...options.processNodeStyle },
+      decisionNodeStyle: { ...defaultNodeStyles.decision, ...options.decisionNodeStyle },
+      startNodeStyle: { ...defaultNodeStyles.start, ...options.startNodeStyle },
+      endNodeStyle: { ...defaultNodeStyles.end, ...options.endNodeStyle },
+      ioNodeStyle: { ...defaultNodeStyles.io, ...options.ioNodeStyle },
+      edgeStyle: { ...defaultEdgeStyle, ...options.edgeStyle }
+    };
+  }
+  
+  /**
+   * Process and normalize node data
+   * @param nodes Input node data
+   */
+  private processNodes(nodes: FlowNode[]): void {
+    // Convert to positioned nodes
+    this.nodes = nodes.map(node => {
+      // Get style based on node type
+      const style = this.getNodeStyleByType(node.type);
+      
+      // Define node dimensions
+      const width = node.width || style.width;
+      const height = node.height || style.height;
+      
+      // Use provided position or initialize at origin
+      const position = node.position || { x: 0, y: 0 };
+      
+      // Create positioned node
+      const positionedNode: PositionedNode = {
+        ...node,
+        x: position.x,
+        y: position.y,
+        width,
+        height,
+        shape: style.shape
+      };
+      
+      // Generate path data based on shape
+      positionedNode.pathData = this.generateShapePath(
+        positionedNode.shape,
+        width,
+        height
+      );
+      
+      // Calculate text position
+      positionedNode.textPosition = {
+        x: position.x,
+        y: position.y
+      };
+      
+      return positionedNode;
+    });
+  }
+  
+  /**
+   * Process and normalize edge data
+   * @param edges Input edge data
+   */
+  private processEdges(edges: FlowEdge[]): void {
+    // Convert to positioned edges
+    this.edges = edges.map(edge => {
+      // Find source and target nodes
+      const sourceNode = this.nodes.find(node => node.id === edge.from);
+      const targetNode = this.nodes.find(node => node.id === edge.to);
+      
+      if (!sourceNode || !targetNode) {
+        console.error(`Edge references non-existent node: ${edge.from} -> ${edge.to}`);
+        // Return a minimal edge to avoid crashes
+        return {
+          ...edge,
+          source: sourceNode || { id: edge.from, x: 0, y: 0, width: 0, height: 0, label: '', type: 'custom', shape: 'rect' },
+          target: targetNode || { id: edge.to, x: 0, y: 0, width: 0, height: 0, label: '', type: 'custom', shape: 'rect' },
+          points: [{ x: 0, y: 0 }, { x: 0, y: 0 }]
+        };
+      }
+      
+      // Calculate edge points (straight line from source to target center)
+      const points = [
+        { x: sourceNode.x, y: sourceNode.y },
+        { x: targetNode.x, y: targetNode.y }
+      ];
+      
+      // Calculate label position at midpoint
+      const labelPosition = {
+        x: (sourceNode.x + targetNode.x) / 2,
+        y: (sourceNode.y + targetNode.y) / 2 - 10
+      };
+      
+      return {
+        ...edge,
+        source: sourceNode,
+        target: targetNode,
+        points,
+        labelPosition
+      };
+    });
+  }
+  
+  /**
+   * Get node style based on node type
+   * @param type Node type
+   */
+  private getNodeStyleByType(type: string): any {
+    switch (type) {
+      case 'process':
+        return this.options.processNodeStyle;
+      case 'decision':
+        return this.options.decisionNodeStyle;
+      case 'start':
+        return this.options.startNodeStyle;
+      case 'end':
+        return this.options.endNodeStyle;
+      case 'io':
+        return this.options.ioNodeStyle;
+      case 'custom':
+      default:
+        return {
+          fill: '#79E2F2',
+          stroke: '#00B8D9',
+          strokeWidth: 2,
+          width: 120,
+          height: 60,
+          textColor: '#172B4D',
+          shape: 'rect'
+        };
+    }
+  }
+  
+  /**
+   * Generate SVG path data for a node shape
+   * @param shape Shape type
+   * @param width Node width
+   * @param height Node height
+   */
+  private generateShapePath(shape: string, width: number, height: number): string {
+    const halfWidth = width / 2;
+    const halfHeight = height / 2;
+    
+    switch (shape) {
+      case 'rect':
+        return `M${-halfWidth},${-halfHeight} h${width} v${height} h${-width} z`;
+        
+      case 'diamond':
+        return `M0,${-halfHeight} L${halfWidth},0 L0,${halfHeight} L${-halfWidth},0 z`;
+        
+      case 'stadium':
+        const radius = Math.min(height / 2, width / 4);
+        return `M${-halfWidth + radius},${-halfHeight} 
+                h${width - 2 * radius} 
+                a${radius},${radius} 0 0 1 ${radius},${radius} 
+                v${height - 2 * radius} 
+                a${radius},${radius} 0 0 1 ${-radius},${radius} 
+                h${-(width - 2 * radius)} 
+                a${radius},${radius} 0 0 1 ${-radius},${-radius} 
+                v${-(height - 2 * radius)} 
+                a${radius},${radius} 0 0 1 ${radius},${-radius} z`;
+        
+      case 'parallelogram':
+        const offset = height / 4;
+        return `M${-halfWidth + offset},${-halfHeight} 
+                h${width} 
+                l${-offset},${height} 
+                h${-width} 
+                z`;
+        
+      case 'circle':
+        const r = Math.min(halfWidth, halfHeight);
+        return `M${-r},0 a${r},${r} 0 1,0 ${r * 2},0 a${r},${r} 0 1,0 ${-r * 2},0`;
+        
+      default:
+        // Default to rectangle
+        return `M${-halfWidth},${-halfHeight} h${width} v${height} h${-width} z`;
+    }
+  }
+  
+  /**
+   * Perform automatic layout of nodes and edges
+   */
+  private performLayout(): void {
+    if (this.dagLayout) {
+      this.performDAGLayout();
+    } else {
+      this.performForceLayout();
+    }
+    
+    // Update edge positions after node layout
+    this.updateEdgePoints();
+  }
+  
+  /**
+   * Perform directed acyclic graph (DAG) layout
+   */
+  private performDAGLayout(): void {
+    const direction = this.options.direction || 'TB';
+    const isHorizontal = direction === 'LR' || direction === 'RL';
+    const isReverse = direction === 'BT' || direction === 'RL';
+    
+    // Group nodes by rank (implicit or explicit)
+    const nodesByRank: Map<number, PositionedNode[]> = new Map();
+    const ranks = new Map<string, number>();
+    
+    // First, identify starting nodes (nodes with no incoming edges)
+    const incomingEdges = new Map<string, number>();
+    this.nodes.forEach(node => incomingEdges.set(node.id, 0));
+    this.edges.forEach(edge => {
+      const count = incomingEdges.get(edge.to) || 0;
+      incomingEdges.set(edge.to, count + 1);
+    });
+    
+    // Nodes with no incoming edges are rank 0
+    const startNodes = this.nodes.filter(node => incomingEdges.get(node.id) === 0);
+    startNodes.forEach(node => ranks.set(node.id, 0));
+    
+    // For nodes with incoming edges, set rank based on maximum rank of source nodes + 1
+    let changed = true;
+    while (changed) {
+      changed = false;
+      this.edges.forEach(edge => {
+        const sourceRank = ranks.get(edge.from);
+        if (sourceRank !== undefined) {
+          const targetRank = ranks.get(edge.to);
+          const newRank = sourceRank + 1;
+          if (targetRank === undefined || newRank > targetRank) {
+            ranks.set(edge.to, newRank);
+            changed = true;
+          }
+        }
+      });
+    }
+    
+    // Group nodes by rank
+    this.nodes.forEach(node => {
+      const rank = ranks.get(node.id) || 0;
+      if (!nodesByRank.has(rank)) {
+        nodesByRank.set(rank, []);
+      }
+      nodesByRank.get(rank)!.push(node);
+    });
+    
+    // Sort ranks
+    const sortedRanks = Array.from(nodesByRank.keys()).sort((a, b) => a - b);
+    
+    // Position nodes by rank
+    const rankSeparation = this.options.levelSeparation || 100;
+    const nodeSeparation = this.options.nodeSeparation || 50;
+    
+    sortedRanks.forEach((rank, rankIndex) => {
+      const nodesInRank = nodesByRank.get(rank)!;
+      
+      // Position nodes within rank
+      nodesInRank.forEach((node, nodeIndex) => {
+        const x = isHorizontal
+          ? (isReverse ? this.width - rankIndex * rankSeparation : rankIndex * rankSeparation)
+          : nodeIndex * nodeSeparation;
+          
+        const y = isHorizontal
+          ? nodeIndex * nodeSeparation
+          : (isReverse ? this.height - rankIndex * rankSeparation : rankIndex * rankSeparation);
+        
+        node.x = x;
+        node.y = y;
+      });
+    });
+    
+    // Center each rank
+    sortedRanks.forEach(rank => {
+      const nodesInRank = nodesByRank.get(rank)!;
+      
+      if (isHorizontal) {
+        // Center vertically
+        const totalHeight = nodesInRank.reduce((sum, node) => sum + node.height, 0)
+          + (nodesInRank.length - 1) * nodeSeparation;
+        let currentY = (this.height - totalHeight) / 2;
+        
+        nodesInRank.forEach(node => {
+          node.y = currentY + node.height / 2;
+          currentY += node.height + nodeSeparation;
+        });
+      } else {
+        // Center horizontally
+        const totalWidth = nodesInRank.reduce((sum, node) => sum + node.width, 0)
+          + (nodesInRank.length - 1) * nodeSeparation;
+        let currentX = (this.width - totalWidth) / 2;
+        
+        nodesInRank.forEach(node => {
+          node.x = currentX + node.width / 2;
+          currentX += node.width + nodeSeparation;
+        });
+      }
+    });
+    
+    // Adjust node positions to stay within bounds
+    this.adjustNodesWithinBounds();
+  }
+  
+  /**
+   * Perform force-directed layout
+   */
+  private performForceLayout(): void {
+    // Simple force-directed layout
+    const simulation = d3.forceSimulation<PositionedNode>()
+      .nodes(this.nodes)
+      .force('charge', d3.forceManyBody().strength(-500))
+      .force('center', d3.forceCenter(this.width / 2, this.height / 2))
+      .force('collision', d3.forceCollide().radius((node: SimulationNodeDatum) => {
+        const n = node as PositionedNode;
+        return Math.max(n.width, n.height) / 2 + 20;
+      }))
+      .force('link', d3.forceLink<PositionedNode, PositionedEdge>()
+        .links(this.edges as any)
+        .id((d: any) => d.id)
+        .distance(100));
+    
+    // Run simulation
+    for (let i = 0; i < 300; ++i) simulation.tick();
+    
+    // Adjust node positions to stay within bounds
+    this.adjustNodesWithinBounds();
+  }
+  
+  /**
+   * Adjust node positions to stay within bounds
+   */
+  private adjustNodesWithinBounds(): void {
+    const padding = 20;
+    
+    // Find min and max coordinates
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    
+    this.nodes.forEach(node => {
+      minX = Math.min(minX, node.x - node.width / 2);
+      minY = Math.min(minY, node.y - node.height / 2);
+      maxX = Math.max(maxX, node.x + node.width / 2);
+      maxY = Math.max(maxY, node.y + node.height / 2);
+    });
+    
+    // Calculate scale and translation to fit within bounds
+    const diagramWidth = maxX - minX + 2 * padding;
+    const diagramHeight = maxY - minY + 2 * padding;
+    
+    const scaleX = this.width / diagramWidth;
+    const scaleY = this.height / diagramHeight;
+    const scale = Math.min(scaleX, scaleY, 1); // Don't scale up if smaller than container
+    
+    const offsetX = -minX * scale + padding + (this.width - diagramWidth * scale) / 2;
+    const offsetY = -minY * scale + padding + (this.height - diagramHeight * scale) / 2;
+    
+    // Apply transformation
+    this.nodes.forEach(node => {
+      node.x = node.x * scale + offsetX;
+      node.y = node.y * scale + offsetY;
+      
+      // Update text position
+      node.textPosition = { x: node.x, y: node.y };
+    });
+  }
+  
+  /**
+   * Update edge points based on current node positions
+   */
+  private updateEdgePoints(): void {
+    this.edges.forEach(edge => {
+      const sourceNode = this.nodes.find(node => node.id === edge.from);
+      const targetNode = this.nodes.find(node => node.id === edge.to);
+      
+      if (!sourceNode || !targetNode) return;
+      
+      // Calculate connection points at node boundaries
+      const { sourcePoint, targetPoint } = this.calculateConnectionPoints(sourceNode, targetNode);
+      
+      // Update edge points
+      edge.points = [sourcePoint, targetPoint];
+      
+      // Update label position
+      edge.labelPosition = {
+        x: (sourcePoint.x + targetPoint.x) / 2,
+        y: (sourcePoint.y + targetPoint.y) / 2 - 10
+      };
+    });
+  }
+  
+  /**
+   * Calculate connection points between nodes
+   * @param sourceNode Source node
+   * @param targetNode Target node
+   */
+  private calculateConnectionPoints(sourceNode: PositionedNode, targetNode: PositionedNode): {
+    sourcePoint: { x: number; y: number };
+    targetPoint: { x: number; y: number };
+  } {
+    // Calculate direction vector
+    const dx = targetNode.x - sourceNode.x;
+    const dy = targetNode.y - sourceNode.y;
+    const angle = Math.atan2(dy, dx);
+    
+    // Calculate source connection point based on shape
+    let sourcePoint = this.getShapeConnectionPoint(sourceNode, angle);
+    
+    // Calculate target connection point based on shape (opposite angle)
+    let targetPoint = this.getShapeConnectionPoint(targetNode, angle + Math.PI);
+    
+    return { sourcePoint, targetPoint };
+  }
+  
+  /**
+   * Get connection point on a shape's boundary
+   * @param node Node with shape
+   * @param angle Angle of connection in radians
+   */
+  private getShapeConnectionPoint(node: PositionedNode, angle: number): { x: number; y: number } {
+    const halfWidth = node.width / 2;
+    const halfHeight = node.height / 2;
+    
+    // Normalize angle to [0, 2π)
+    while (angle < 0) angle += 2 * Math.PI;
+    angle %= 2 * Math.PI;
+    
+    // Calculate connection point based on shape
+    switch (node.shape) {
+      case 'diamond': {
+        // Parametric equation of diamond
+        const t = (angle / (Math.PI / 2)) % 4;
+        
+        let x, y;
+        if (t < 1) {
+          // Top right edge
+          x = t * halfWidth;
+          y = (1 - t) * -halfHeight;
+        } else if (t < 2) {
+          // Bottom right edge
+          x = (2 - t) * halfWidth;
+          y = (t - 1) * halfHeight;
+        } else if (t < 3) {
+          // Bottom left edge
+          x = (t - 2) * -halfWidth;
+          y = (3 - t) * halfHeight;
+        } else {
+          // Top left edge
+          x = (4 - t) * -halfWidth;
+          y = (t - 3) * -halfHeight;
+        }
+        
+        return { x: node.x + x, y: node.y + y };
+      }
+        
+      case 'parallelogram': {
+        const offset = halfHeight;
+        const corners = [
+          { x: node.x - halfWidth + offset, y: node.y - halfHeight },
+          { x: node.x + halfWidth + offset, y: node.y - halfHeight },
+          { x: node.x + halfWidth - offset, y: node.y + halfHeight },
+          { x: node.x - halfWidth - offset, y: node.y + halfHeight }
+        ];
+        
+        return this.getPolygonIntersection(corners, node.x, node.y, angle);
+      }
+        
+      case 'stadium': {
+        // Approximate with rectangle with rounded corners
+        const dx = Math.cos(angle);
+        const dy = Math.sin(angle);
+        const rx = halfWidth;
+        const ry = halfHeight;
+        
+        // Intersection with rectangle
+        let x, y;
+        if (Math.abs(dx) * ry > Math.abs(dy) * rx) {
+          // Intersect with left or right edge
+          x = (dx > 0 ? 1 : -1) * rx;
+          y = dy * (rx / Math.abs(dx));
+        } else {
+          // Intersect with top or bottom edge
+          x = dx * (ry / Math.abs(dy));
+          y = (dy > 0 ? 1 : -1) * ry;
+        }
+        
+        return { x: node.x + x, y: node.y + y };
+      }
+        
+      case 'circle': {
+        const radius = Math.min(halfWidth, halfHeight);
+        return {
+          x: node.x + radius * Math.cos(angle),
+          y: node.y + radius * Math.sin(angle)
+        };
+      }
+        
+      case 'rect':
+      default: {
+        // Intersection with rectangle
+        const dx = Math.cos(angle);
+        const dy = Math.sin(angle);
+        
+        let x, y;
+        if (Math.abs(dx) * halfHeight > Math.abs(dy) * halfWidth) {
+          // Intersect with left or right edge
+          x = (dx > 0 ? 1 : -1) * halfWidth;
+          y = dy * (halfWidth / Math.abs(dx));
+        } else {
+          // Intersect with top or bottom edge
+          x = dx * (halfHeight / Math.abs(dy));
+          y = (dy > 0 ? 1 : -1) * halfHeight;
+        }
+        
+        return { x: node.x + x, y: node.y + y };
+      }
+    }
+  }
+  
+  /**
+   * Get intersection point with a polygon
+   * @param corners Polygon corner points
+   * @param centerX Center X coordinate
+   * @param centerY Center Y coordinate
+   * @param angle Angle of connection in radians
+   */
+  private getPolygonIntersection(
+    corners: Array<{ x: number; y: number }>,
+    centerX: number,
+    centerY: number,
+    angle: number
+  ): { x: number; y: number } {
+    const dx = Math.cos(angle);
+    const dy = Math.sin(angle);
+    let minDist = Infinity;
+    let closestPoint = { x: centerX, y: centerY };
+    
+    // Check intersection with each edge
+    for (let i = 0; i < corners.length; i++) {
+      const j = (i + 1) % corners.length;
+      const corner1 = corners[i];
+      const corner2 = corners[j];
+      
+      // Line intersection calculation
+      const x1 = corner1.x, y1 = corner1.y;
+      const x2 = corner2.x, y2 = corner2.y;
+      const x3 = centerX, y3 = centerY;
+      const x4 = centerX + dx * 1000, y4 = centerY + dy * 1000; // Point far in ray direction
+      
+      const denominator = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
+      if (denominator === 0) continue; // Parallel lines
+      
+      const ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator;
+      const ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator;
+      
+      // Check if intersection is on both line segments
+      if (ua >= 0 && ua <= 1 && ub >= 0) {
+        const intersectX = x1 + ua * (x2 - x1);
+        const intersectY = y1 + ua * (y2 - y1);
+        
+        // Calculate distance from center to intersection
+        const dist = Math.sqrt((intersectX - centerX) ** 2 + (intersectY - centerY) ** 2);
+        
+        // Keep closest valid intersection
+        if (dist < minDist) {
+          minDist = dist;
+          closestPoint = { x: intersectX, y: intersectY };
+        }
+      }
+    }
+    
+    return closestPoint;
+  }
+  
+  /**
+   * Initialize the visualization container and elements
+   */
+  private initializeVisualization(): void {
+    // Clear any existing content
+    this.container.innerHTML = '';
+    
+    // Create SVG element
+    this.svg = d3.select(this.container)
       .append('svg')
-      .attr('width', this.width + this.margin.left + this.margin.right)
-      .attr('height', this.height + this.margin.top + this.margin.bottom)
-      .attr('class', 'flow-diagram-visualization');
+      .attr('width', this.width)
+      .attr('height', this.height)
+      .attr('class', 'flow-diagram-visualization')
+      .attr('viewBox', [0, 0, this.width, this.height].join(' '))
+      .attr('preserveAspectRatio', 'xMidYMid meet');
     
-    // Add definitions for markers
-    const defs = svgContainer.append('defs');
+    // Initialize zoom behavior
+    this.zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.1, 3])
+      .on('zoom', (event) => {
+        this.svg.select('g.diagram-container')
+          .attr('transform', event.transform.toString());
+      });
     
-    // Arrow marker for edges
+    // Enable zooming
+    this.svg.call(this.zoom);
+    
+    // Create diagram container
+    const diagramContainer = this.svg.append('g')
+      .attr('class', 'diagram-container');
+    
+    // Create groups for edges and nodes
+    this.edgesGroup = diagramContainer.append('g').attr('class', 'edges');
+    this.nodesGroup = diagramContainer.append('g').attr('class', 'nodes');
+    
+    // Add markers for arrow heads
+    this.addArrowMarkers();
+    
+    // Initialize tooltip
+    this.tooltip = d3.select(this.container)
+      .append('div')
+      .attr('class', 'flow-diagram-tooltip')
+      .style('position', 'absolute')
+      .style('visibility', 'hidden')
+      .style('background-color', 'white')
+      .style('border', '1px solid #ddd')
+      .style('border-radius', '4px')
+      .style('padding', '8px')
+      .style('pointer-events', 'none')
+      .style('z-index', '10');
+    
+    // Render the visualization
+    this.render();
+  }
+  
+  /**
+   * Add arrow markers for directed edges
+   */
+  private addArrowMarkers(): void {
+    // Add defs element for markers
+    const defs = this.svg.append('defs');
+    
+    // Add marker for standard arrows
     defs.append('marker')
       .attr('id', 'arrow')
       .attr('viewBox', '0 -5 10 10')
-      .attr('refX', 8)
+      .attr('refX', 10)
       .attr('refY', 0)
       .attr('markerWidth', this.options.edgeStyle?.arrowSize || 8)
       .attr('markerHeight', this.options.edgeStyle?.arrowSize || 8)
       .attr('orient', 'auto')
       .append('path')
       .attr('d', 'M0,-5L10,0L0,5')
-      .attr('fill', this.options.edgeStyle?.stroke || '#888888');
+      .attr('fill', this.options.edgeStyle?.stroke || '#6B778C');
     
-    // Create main group with margin transform
-    this.svg = svgContainer.append('g')
-      .attr('transform', `translate(${this.margin.left},${this.margin.top})`) as unknown as d3.Selection<SVGSVGElement, unknown, null, undefined>;
-    
-    // Create layers for edges and nodes
-    this.edgesLayer = this.svg.append('g').attr('class', 'edges-layer');
-    this.nodesLayer = this.svg.append('g').attr('class', 'nodes-layer');
-    
-    // Add zoom behavior if enabled
-    if (this.options.zoomable !== undefined ? this.options.zoomable : true) {
-      const zoom = d3.zoom<SVGSVGElement, unknown>()
-        .scaleExtent([0.2, 5])
-        .on('zoom', (event) => {
-          this.currentTransform = event.transform;
-          this.svg?.attr('transform', `translate(${this.margin.left + event.transform.x},${this.margin.top + event.transform.y}) scale(${event.transform.k})`);
-        });
-      
-      svgContainer.call(zoom as any);
-    }
-    
-    // Add title if provided
-    if (this.options.title) {
-      svgContainer.append('text')
-        .attr('x', (this.width + this.margin.left + this.margin.right) / 2)
-        .attr('y', 20)
-        .attr('text-anchor', 'middle')
-        .attr('class', 'diagram-title')
-        .text(this.options.title);
-    }
+    // Add marker for highlighted arrows
+    defs.append('marker')
+      .attr('id', 'arrow-highlight')
+      .attr('viewBox', '0 -5 10 10')
+      .attr('refX', 10)
+      .attr('refY', 0)
+      .attr('markerWidth', (this.options.edgeStyle?.arrowSize || 8) + 2)
+      .attr('markerHeight', (this.options.edgeStyle?.arrowSize || 8) + 2)
+      .attr('orient', 'auto')
+      .append('path')
+      .attr('d', 'M0,-5L10,0L0,5')
+      .attr('fill', '#FF5630');
   }
-
+  
   /**
-   * Calculates node positions if automatic layout is enabled
-   */
-  private calculateLayout(): void {
-    const { nodes, edges, direction, nodeSeparation, levelSeparation } = this.options;
-    
-    if (!this.options.autoLayout) {
-      return; // Use provided positions
-    }
-    
-    // Simple layered layout algorithm (similar to Sugiyama)
-    
-    // Step 1: Assign ranks (levels) to nodes
-    const nodeMap = new Map(nodes.map(node => [node.id, { ...node, rank: -1, processed: false }]));
-    const outgoingEdges = new Map<string, string[]>();
-    const incomingEdges = new Map<string, string[]>();
-    
-    // Build edge connections maps
-    edges.forEach(edge => {
-      if (!outgoingEdges.has(edge.from)) {
-        outgoingEdges.set(edge.from, []);
-      }
-      outgoingEdges.get(edge.from)!.push(edge.to);
-      
-      if (!incomingEdges.has(edge.to)) {
-        incomingEdges.set(edge.to, []);
-      }
-      incomingEdges.get(edge.to)!.push(edge.from);
-    });
-    
-    // Assign ranks through topological sort
-    // First find source nodes (no incoming edges)
-    const sourceNodes = nodes.filter(node => !incomingEdges.has(node.id) || incomingEdges.get(node.id)!.length === 0);
-    
-    // Assign rank 0 to source nodes
-    sourceNodes.forEach(node => {
-      const nodeInfo = nodeMap.get(node.id)!;
-      nodeInfo.rank = 0;
-      nodeInfo.processed = true;
-    });
-    
-    // Propagate ranks to other nodes
-    let done = false;
-    while (!done) {
-      done = true;
-      for (const edge of edges) {
-        const sourceNode = nodeMap.get(edge.from)!;
-        const targetNode = nodeMap.get(edge.to)!;
-        
-        if (sourceNode.processed && !targetNode.processed) {
-          targetNode.rank = sourceNode.rank + 1;
-          targetNode.processed = true;
-          done = false;
-        }
-      }
-    }
-    
-    // Handle unprocessed nodes (disconnected)
-    nodes.forEach(node => {
-      const nodeInfo = nodeMap.get(node.id)!;
-      if (!nodeInfo.processed) {
-        nodeInfo.rank = 0;
-        nodeInfo.processed = true;
-      }
-    });
-    
-    // Step 2: Assign positions based on ranks
-    const rankToNodes = new Map<number, any[]>();
-    
-    // Group nodes by rank
-    for (const [id, nodeInfo] of nodeMap.entries()) {
-      if (!rankToNodes.has(nodeInfo.rank)) {
-        rankToNodes.set(nodeInfo.rank, []);
-      }
-      rankToNodes.get(nodeInfo.rank)!.push(nodeInfo);
-    }
-    
-    // Sort ranks
-    const ranks = Array.from(rankToNodes.keys()).sort((a, b) => a - b);
-    
-    // Calculate node positions based on direction
-    const isHorizontal = direction === 'LR' || direction === 'RL';
-    const isReversed = direction === 'RL' || direction === 'BT';
-    
-    const defaultWidth = 120;
-    const defaultHeight = 60;
-    
-    // Calculate position for each rank
-    ranks.forEach((rank, rankIndex) => {
-      const nodesInRank = rankToNodes.get(rank)!;
-      
-      // Position nodes within the same rank
-      nodesInRank.forEach((nodeInfo, nodeIndex) => {
-        const nodeWidth = nodeInfo.width || defaultWidth;
-        const nodeHeight = nodeInfo.height || defaultHeight;
-        
-        if (isHorizontal) {
-          // For horizontal layouts (LR, RL)
-          const x = isReversed 
-            ? this.width - (rankIndex * (levelSeparation || 100) + nodeWidth)
-            : rankIndex * (levelSeparation || 100);
-            
-          const y = nodeIndex * (nodeSeparation || 50 + nodeHeight);
-          
-          nodeInfo.position = { x, y };
-        } else {
-          // For vertical layouts (TB, BT)
-          const x = nodeIndex * (nodeSeparation || 50 + nodeWidth);
-          
-          const y = isReversed
-            ? this.height - (rankIndex * (levelSeparation || 100) + nodeHeight)
-            : rankIndex * (levelSeparation || 100);
-            
-          nodeInfo.position = { x, y };
-        }
-      });
-    });
-    
-    // Update node positions in the original data
-    for (const node of nodes) {
-      const nodeInfo = nodeMap.get(node.id)!;
-      node.position = nodeInfo.position;
-    }
-  }
-
-  /**
-   * Renders the flow diagram nodes
-   */
-  private renderNodes(): void {
-    if (!this.nodesLayer) return;
-    
-    const { nodes } = this.options;
-    
-    // Default node dimensions
-    const defaultWidth = 120;
-    const defaultHeight = 60;
-    
-    // Create node elements
-    const nodeElements = this.nodesLayer.selectAll('.node')
-      .data(nodes)
-      .enter()
-      .append('g')
-      .attr('class', 'node')
-      .attr('data-id', d => d.id)
-      .attr('transform', d => `translate(${d.position?.x || 0}, ${d.position?.y || 0})`)
-      .classed('draggable', !!this.options.draggable);
-    
-    // Add node shapes based on type
-    nodeElements.each((d, i, elements) => {
-      const node = d3.select(elements[i]);
-      const width = d.width || defaultWidth;
-      const height = d.height || defaultHeight;
-      
-      // Get style based on node type
-      let style;
-      switch (d.type) {
-        case 'process': style = this.options.processNodeStyle; break;
-        case 'decision': style = this.options.decisionNodeStyle; break;
-        case 'start': style = this.options.startNodeStyle; break;
-        case 'end': style = this.options.endNodeStyle; break;
-        case 'io': style = this.options.ioNodeStyle; break;
-        default: style = this.options.processNodeStyle;
-      }
-      
-      // Create shape path
-      const shapeFn = this.nodeShapes[d.type] || this.nodeShapes.process;
-      
-      node.append('path')
-        .attr('d', shapeFn(width, height))
-        .attr('fill', style?.fill || '#ffffff')
-        .attr('stroke', style?.stroke || '#000000')
-        .attr('stroke-width', style?.strokeWidth || 1);
-      
-      // Add label
-      node.append('text')
-        .attr('x', width / 2)
-        .attr('y', height / 2)
-        .attr('text-anchor', 'middle')
-        .attr('dominant-baseline', 'middle')
-        .attr('fill', style?.textColor || '#000000')
-        .text(d.label);
-      
-      // Make nodes draggable if enabled
-      if (this.options.draggable) {
-        this.makeNodeDraggable(node);
-      }
-    });
-  }
-
-  /**
-   * Makes a node draggable
-   * @param node D3 selection of the node element
-   */
-  private makeNodeDraggable(node: d3.Selection<any, any, any, any>): void {
-    // Create drag behavior
-    const drag = d3.drag<any, any>()
-      .on('start', (event, d) => {
-        // Raise this node to the top
-        node.raise();
-      })
-      .on('drag', (event, d) => {
-        // Calculate new position
-        let newX = d.position.x + event.dx;
-        let newY = d.position.y + event.dy;
-        
-        // Snap to grid if enabled
-        if (this.options.snapToGrid && this.options.gridSize) {
-          const gridSize = this.options.gridSize;
-          newX = Math.round(newX / gridSize) * gridSize;
-          newY = Math.round(newY / gridSize) * gridSize;
-        }
-        
-        // Update position
-        d.position.x = newX;
-        d.position.y = newY;
-        
-        // Update node position
-        node.attr('transform', `translate(${newX}, ${newY})`);
-        
-        // Update connected edges
-        this.updateEdgesForNode(d.id);
-      });
-    
-    // Apply drag behavior
-    node.call(drag as any);
-  }
-
-  /**
-   * Updates the positions of edges connected to a specific node
-   * @param nodeId ID of the node that was moved
-   */
-  private updateEdgesForNode(nodeId: string): void {
-    if (!this.edgesLayer) return;
-    
-    const { edges } = this.options;
-    
-    // Find all edges connected to this node
-    const connectedEdges = edges.filter(edge => edge.from === nodeId || edge.to === nodeId);
-    
-    // Update each connected edge
-    connectedEdges.forEach(edge => {
-      const edgeElement = this.edgesLayer!.select(`.edge[data-id="${edge.from}-${edge.to}"]`);
-      const path = edgeElement.select('path');
-      const sourceNode = this.options.nodes.find(n => n.id === edge.from);
-      const targetNode = this.options.nodes.find(n => n.id === edge.to);
-      
-      if (sourceNode && targetNode && sourceNode.position && targetNode.position) {
-        // Calculate new path
-        const sourceX = sourceNode.position.x + (sourceNode.width || 120) / 2;
-        const sourceY = sourceNode.position.y + (sourceNode.height || 60) / 2;
-        const targetX = targetNode.position.x + (targetNode.width || 120) / 2;
-        const targetY = targetNode.position.y + (targetNode.height || 60) / 2;
-        
-        const pathData = this.calculateEdgePath(
-          sourceX, sourceY, 
-          targetX, targetY,
-          sourceNode.type, targetNode.type,
-          sourceNode.width || 120, sourceNode.height || 60,
-          targetNode.width || 120, targetNode.height || 60
-        );
-        
-        // Update the path
-        path.attr('d', pathData);
-        
-        // Update label position if present
-        const label = edgeElement.select('text');
-        if (!label.empty()) {
-          // Position label at midpoint of the edge
-          const midX = (sourceX + targetX) / 2;
-          const midY = (sourceY + targetY) / 2;
-          label.attr('x', midX).attr('y', midY - 5);
-        }
-      }
-    });
-  }
-
-  /**
-   * Renders the flow diagram edges
-   */
-  private renderEdges(): void {
-    if (!this.edgesLayer) return;
-    
-    const { edges, nodes } = this.options;
-    
-    // Create edge elements
-    const edgeElements = this.edgesLayer.selectAll('.edge')
-      .data(edges)
-      .enter()
-      .append('g')
-      .attr('class', 'edge')
-      .attr('data-id', d => `${d.from}-${d.to}`);
-    
-    // Add paths and labels
-    edgeElements.each((d, i, elements) => {
-      const edge = d3.select(elements[i]);
-      const sourceNode = nodes.find(n => n.id === d.from);
-      const targetNode = nodes.find(n => n.id === d.to);
-      
-      if (sourceNode && targetNode && sourceNode.position && targetNode.position) {
-        // Calculate source and target centers
-        const sourceX = sourceNode.position.x + (sourceNode.width || 120) / 2;
-        const sourceY = sourceNode.position.y + (sourceNode.height || 60) / 2;
-        const targetX = targetNode.position.x + (targetNode.width || 120) / 2;
-        const targetY = targetNode.position.y + (targetNode.height || 60) / 2;
-        
-        // Calculate the path
-        const pathData = this.calculateEdgePath(
-          sourceX, sourceY, 
-          targetX, targetY,
-          sourceNode.type, targetNode.type,
-          sourceNode.width || 120, sourceNode.height || 60,
-          targetNode.width || 120, targetNode.height || 60
-        );
-        
-        // Add edge path
-        edge.append('path')
-          .attr('d', pathData)
-          .attr('fill', 'none')
-          .attr('stroke', this.options.edgeStyle?.stroke || '#888888')
-          .attr('stroke-width', this.options.edgeStyle?.strokeWidth || 2)
-          .attr('marker-end', 'url(#arrow)')
-          .attr('stroke-dasharray', d.style === 'dashed' ? '5,5' : 
-                                  d.style === 'dotted' ? '2,2' : null);
-        
-        // Add edge label if provided
-        if (d.label) {
-          // Position label at midpoint of the edge
-          const midX = (sourceX + targetX) / 2;
-          const midY = (sourceY + targetY) / 2;
-          
-          edge.append('text')
-            .attr('x', midX)
-            .attr('y', midY - 5)
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'middle')
-            .attr('fill', this.options.edgeStyle?.textColor || '#333333')
-            .attr('font-size', '12px')
-            .text(d.label);
-        }
-      }
-    });
-  }
-
-  /**
-   * Calculates the path for an edge between two nodes
-   * @param sourceX Source X coordinate
-   * @param sourceY Source Y coordinate
-   * @param targetX Target X coordinate
-   * @param targetY Target Y coordinate
-   * @param sourceType Type of source node
-   * @param targetType Type of target node
-   * @param sourceWidth Width of source node
-   * @param sourceHeight Height of source node
-   * @param targetWidth Width of target node
-   * @param targetHeight Height of target node
-   * @returns SVG path string
-   */
-  private calculateEdgePath(
-    sourceX: number, sourceY: number,
-    targetX: number, targetY: number,
-    sourceType: string, targetType: string,
-    sourceWidth: number, sourceHeight: number,
-    targetWidth: number, targetHeight: number
-  ): string {
-    // Calculate direction vector
-    const dx = targetX - sourceX;
-    const dy = targetY - sourceY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    
-    if (distance === 0) return ''; // Can't draw an edge to itself
-    
-    // Normalized direction
-    const normX = dx / distance;
-    const normY = dy / distance;
-    
-    // Find intersection points with node shapes
-    // For simplicity, we'll use a simple approximation based on node dimensions
-    // This could be improved with actual intersection calculations for complex shapes
-    
-    // Source node edge
-    const sourceOffsetX = (sourceWidth / 2) * Math.abs(normX);
-    const sourceOffsetY = (sourceHeight / 2) * Math.abs(normY);
-    const sourceEdgeX = sourceX + (normX >= 0 ? sourceOffsetX : -sourceOffsetX);
-    const sourceEdgeY = sourceY + (normY >= 0 ? sourceOffsetY : -sourceOffsetY);
-    
-    // Target node edge
-    const targetOffsetX = (targetWidth / 2) * Math.abs(normX);
-    const targetOffsetY = (targetHeight / 2) * Math.abs(normY);
-    const targetEdgeX = targetX - (normX >= 0 ? targetOffsetX : -targetOffsetX);
-    const targetEdgeY = targetY - (normY >= 0 ? targetOffsetY : -targetOffsetY);
-    
-    // Check the flow direction to determine path shape
-    switch (this.options.direction) {
-      case 'TB':
-      case 'BT':
-        // For vertical flow, use curved paths for non-vertical edges
-        if (Math.abs(normX) > 0.2) {
-          const cp1x = sourceEdgeX;
-          const cp1y = targetEdgeY;
-          return `M${sourceEdgeX},${sourceEdgeY} C${cp1x},${cp1y} ${cp1x},${cp1y} ${targetEdgeX},${targetEdgeY}`;
-        }
-        break;
-        
-      case 'LR':
-      case 'RL':
-        // For horizontal flow, use curved paths for non-horizontal edges
-        if (Math.abs(normY) > 0.2) {
-          const cp1x = targetEdgeX;
-          const cp1y = sourceEdgeY;
-          return `M${sourceEdgeX},${sourceEdgeY} C${cp1x},${cp1y} ${cp1x},${cp1y} ${targetEdgeX},${targetEdgeY}`;
-        }
-        break;
-    }
-    
-    // Default to straight line for edges that align with the flow direction
-    return `M${sourceEdgeX},${sourceEdgeY} L${targetEdgeX},${targetEdgeY}`;
-  }
-
-  /**
-   * Sets up responsive behavior for the visualization
-   */
-  private setupResponsiveBehavior(): void {
-    if (!this.options.responsive) return;
-    
-    const resizeObserver = new ResizeObserver(() => {
-      // Update dimensions
-      this.width = this.container.clientWidth - this.margin.left - this.margin.right;
-      this.height = Math.max(300, this.container.clientHeight - this.margin.top - this.margin.bottom);
-      
-      // Redraw visualization
-      this.render();
-    });
-    
-    resizeObserver.observe(this.container);
-  }
-
-  /**
-   * Renders the flow diagram visualization
+   * Render the flow diagram
    */
   public render(): void {
-    // Calculate layout if automatic layout is enabled
-    if (this.options.autoLayout) {
-      this.calculateLayout();
-    }
+    // Update dimensions based on container size
+    this.width = this.container.clientWidth || this.width;
+    this.height = this.container.clientHeight || this.height;
     
-    // Initialize SVG container
-    this.initializeSVG();
+    // Update SVG dimensions
+    this.svg
+      .attr('width', this.width)
+      .attr('height', this.height)
+      .attr('viewBox', [0, 0, this.width, this.height].join(' '));
     
-    // Render edges first (so they're below nodes)
+    // Render edges
     this.renderEdges();
     
     // Render nodes
     this.renderNodes();
-    
-    // Fit to container if enabled
-    if (this.options.fitToContainer) {
-      this.fitToContainer();
-    }
-    
-    // Set up responsive behavior
-    this.setupResponsiveBehavior();
-    
-    // Add mini-map if enabled
-    if (this.options.showMiniMap) {
-      this.createMiniMap();
-    }
   }
-
+  
   /**
-   * Creates a mini-map for navigation
+   * Render the edges of the flow diagram
    */
-  private createMiniMap(): void {
-    if (!this.svg) return;
+  private renderEdges(): void {
+    // Bind edge data
+    const edgeGroups = this.edgesGroup
+      .selectAll<SVGGElement, PositionedEdge>('g.edge')
+      .data(this.edges, (d: any) => `${d.from}-${d.to}`);
     
-    const miniMapWidth = 150;
-    const miniMapHeight = 100;
-    const padding = 5;
+    // Remove old edges
+    edgeGroups.exit().remove();
     
-    // Create mini-map container
-    const miniMap = d3.select(this.container).select('svg')
-      .append('g')
-      .attr('class', 'mini-map')
-      .attr('transform', `translate(${this.width + this.margin.left - miniMapWidth - padding}, ${padding})`);
-    
-    // Add background
-    miniMap.append('rect')
-      .attr('width', miniMapWidth)
-      .attr('height', miniMapHeight)
-      .attr('fill', '#f5f5f5')
-      .attr('stroke', '#cccccc')
-      .attr('stroke-width', 1);
-    
-    // Clone and scale down the diagram
-    // This is a simplified representation, not a fully interactive mini-map
-    
-    // Calculate bounds of the full diagram
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    
-    this.options.nodes.forEach(node => {
-      if (!node.position) return;
-      
-      const x1 = node.position.x;
-      const y1 = node.position.y;
-      const x2 = x1 + (node.width || 120);
-      const y2 = y1 + (node.height || 60);
-      
-      minX = Math.min(minX, x1);
-      minY = Math.min(minY, y1);
-      maxX = Math.max(maxX, x2);
-      maxY = Math.max(maxY, y2);
-    });
-    
-    // Calculate scale factor to fit in mini-map
-    const diagramWidth = maxX - minX;
-    const diagramHeight = maxY - minY;
-    const scaleX = (miniMapWidth - 10) / diagramWidth;
-    const scaleY = (miniMapHeight - 10) / diagramHeight;
-    const scale = Math.min(scaleX, scaleY);
-    
-    // Create mini nodes
-    miniMap.append('g')
-      .selectAll('.mini-node')
-      .data(this.options.nodes)
+    // Create new edge groups
+    const enterGroups = edgeGroups
       .enter()
-      .append('rect')
-      .attr('x', d => (d.position?.x || 0 - minX) * scale + 5)
-      .attr('y', d => (d.position?.y || 0 - minY) * scale + 5)
-      .attr('width', d => (d.width || 120) * scale)
-      .attr('height', d => (d.height || 60) * scale)
-      .attr('fill', d => {
-        switch (d.type) {
-          case 'process': return this.options.processNodeStyle?.fill || '#4285F4';
-          case 'decision': return this.options.decisionNodeStyle?.fill || '#FBBC05';
-          case 'start': return this.options.startNodeStyle?.fill || '#34A853';
-          case 'end': return this.options.endNodeStyle?.fill || '#EA4335';
-          case 'io': return this.options.ioNodeStyle?.fill || '#8AB4F8';
-          default: return '#4285F4';
+      .append('g')
+      .attr('class', 'edge');
+    
+    // Add edge lines
+    enterGroups.append('path')
+      .attr('class', 'edge-path')
+      .attr('marker-end', 'url(#arrow)')
+      .attr('fill', 'none');
+    
+    // Add edge labels
+    enterGroups.append('text')
+      .attr('class', 'edge-label')
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'middle');
+    
+    // Merge and update all edge groups
+    const allEdgeGroups = enterGroups.merge(edgeGroups);
+    
+    // Update edge paths
+    allEdgeGroups.select<SVGPathElement>('path.edge-path')
+      .attr('d', d => this.generateEdgePath(d))
+      .attr('stroke', (d, i) => this.getEdgeStroke(d, i))
+      .attr('stroke-width', d => this.options.edgeStyle?.strokeWidth || 2)
+      .attr('stroke-dasharray', d => this.getEdgeDashArray(d))
+      .attr('marker-end', d => this.highlightedNodeId && 
+                               (d.from === this.highlightedNodeId || d.to === this.highlightedNodeId) 
+                             ? 'url(#arrow-highlight)' 
+                             : 'url(#arrow)')
+      .on('mouseover', (event, d) => this.showEdgeTooltip(event, d))
+      .on('mouseout', () => this.hideTooltip());
+    
+    // Update edge labels
+    allEdgeGroups.select<SVGTextElement>('text.edge-label')
+      .attr('x', d => d.labelPosition?.x || 0)
+      .attr('y', d => d.labelPosition?.y || 0)
+      .attr('fill', this.options.edgeStyle?.textColor || '#172B4D')
+      .attr('font-size', this.options.edgeStyle?.fontSize || 12)
+      .text(d => d.label || '');
+  }
+  
+  /**
+   * Render the nodes of the flow diagram
+   */
+  private renderNodes(): void {
+    // Bind node data
+    const nodeGroups = this.nodesGroup
+      .selectAll<SVGGElement, PositionedNode>('g.node')
+      .data(this.nodes, (d: any) => d.id);
+    
+    // Remove old nodes
+    nodeGroups.exit().remove();
+    
+    // Create new node groups
+    const enterGroups = nodeGroups
+      .enter()
+      .append('g')
+      .attr('class', 'node')
+      .attr('id', d => `node-${d.id}`);
+    
+    // Add node shapes
+    enterGroups.append('path')
+      .attr('class', 'node-shape');
+    
+    // Add node labels
+    enterGroups.append('text')
+      .attr('class', 'node-label')
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'middle');
+    
+    // Add drag behavior if enabled
+    if (this.options.draggable) {
+      enterGroups.call(this.createDragBehavior());
+    }
+    
+    // Merge and update all node groups
+    const allNodeGroups = enterGroups.merge(nodeGroups);
+    
+    // Update node positions
+    allNodeGroups
+      .attr('transform', d => `translate(${d.x}, ${d.y})`)
+      .on('mouseover', (event, d) => this.showNodeTooltip(event, d))
+      .on('mouseout', () => this.hideTooltip())
+      .on('click', (event, d) => {
+        this.highlightNode(d.id);
+        if (this.options.onClick) {
+          this.options.onClick(event, d);
         }
       });
+    
+    // Update node shapes
+    allNodeGroups.select<SVGPathElement>('path.node-shape')
+      .attr('d', d => d.pathData || '')
+      .attr('fill', (d, i) => this.getNodeFill(d, i))
+      .attr('stroke', d => this.getNodeStyle(d).stroke)
+      .attr('stroke-width', d => this.highlightedNodeId === d.id 
+                               ? (this.getNodeStyle(d).strokeWidth || 2) + 2 
+                               : this.getNodeStyle(d).strokeWidth || 2);
+    
+    // Update node labels
+    allNodeGroups.select<SVGTextElement>('text.node-label')
+      .attr('fill', d => this.getNodeStyle(d).textColor || '#ffffff')
+      .attr('font-size', '12px')
+      .text(d => d.label)
+      .each(function(d) {
+        // Handle text wrapping for long labels
+        const textElement = d3.select(this);
+        const words = d.label.split(/\s+/);
+        const lineHeight = 1.1; // ems
+        const y = 0;
+        const width = Math.min(d.width * 0.9, 30 * words.length);
+        
+        textElement.text(null); // Clear existing text
+        
+        // Skip wrapping for very short labels
+        if (words.length <= 1 && d.label.length < 10) {
+          textElement.text(d.label);
+          return;
+        }
+        
+        // Add wrapped text
+        let line: string[] = [];
+        let lineNumber = 0;
+        let tspan = textElement.append('tspan')
+          .attr('x', 0)
+          .attr('y', y)
+          .attr('dy', `${lineNumber * lineHeight}em`);
+        
+        words.forEach(word => {
+          line.push(word);
+          tspan.text(line.join(' '));
+          
+          if (tspan.node()!.getComputedTextLength() > width) {
+            line.pop();
+            tspan.text(line.join(' '));
+            line = [word];
+            lineNumber++;
+            tspan = textElement.append('tspan')
+              .attr('x', 0)
+              .attr('y', y)
+              .attr('dy', `${lineNumber * lineHeight}em`)
+              .text(word);
+          }
+        });
+        
+        // Center the text vertically
+        const totalHeight = lineNumber * lineHeight;
+        textElement.selectAll('tspan')
+          .attr('dy', (d, i) => `${i * lineHeight - totalHeight/2 + 0.3}em`);
+      });
   }
-
+  
   /**
-   * Fits the diagram to the container
+   * Create drag behavior for nodes
    */
-  private fitToContainer(): void {
-    if (!this.svg) return;
+  private createDragBehavior(): d3.DragBehavior<SVGGElement, PositionedNode, unknown> {
+    return d3.drag<SVGGElement, PositionedNode>()
+      .on('start', (event, d) => {
+        event.sourceEvent.stopPropagation(); // Prevent zoom behavior
+      })
+      .on('drag', (event, d) => {
+        // Update node position
+        d.x += event.dx;
+        d.y += event.dy;
+        
+        // Snap to grid if enabled
+        if (this.options.snapToGrid) {
+          const gridSize = this.options.gridSize || 20;
+          d.x = Math.round(d.x / gridSize) * gridSize;
+          d.y = Math.round(d.y / gridSize) * gridSize;
+        }
+        
+        // Update node position and connected edges
+        d3.select(event.sourceEvent.target.closest('g.node'))
+          .attr('transform', `translate(${d.x}, ${d.y})`);
+        
+        // Update edges connected to this node
+        this.updateEdgePoints();
+        this.renderEdges();
+      })
+      .on('end', () => {
+        // Update edge points after dragging ends
+        this.updateEdgePoints();
+        this.renderEdges();
+      });
+  }
+  
+  /**
+   * Generate path data for an edge
+   * @param edge Edge data
+   */
+  private generateEdgePath(edge: PositionedEdge): string {
+    if (edge.points.length < 2) return '';
     
-    // Calculate bounds of the diagram
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    const sourcePoint = edge.points[0];
+    const targetPoint = edge.points[1];
     
-    this.options.nodes.forEach(node => {
-      if (!node.position) return;
-      
-      const x1 = node.position.x;
-      const y1 = node.position.y;
-      const x2 = x1 + (node.width || 120);
-      const y2 = y1 + (node.height || 60);
-      
-      minX = Math.min(minX, x1);
-      minY = Math.min(minY, y1);
-      maxX = Math.max(maxX, x2);
-      maxY = Math.max(maxY, y2);
-    });
+    // For diagonal lines, use curved path
+    return `M${sourcePoint.x},${sourcePoint.y} C${sourcePoint.x},${sourcePoint.y} ${targetPoint.x},${targetPoint.y} ${targetPoint.x},${targetPoint.y}`;
+  }
+  
+  /**
+   * Get node fill color
+   * @param node Node data
+   * @param index Node index
+   */
+  private getNodeFill(node: PositionedNode, index: number): string {
+    const style = this.getNodeStyle(node);
+    return style.fill || '#4C9AFF';
+  }
+  
+  /**
+   * Get node style based on node type
+   * @param node Node data
+   */
+  private getNodeStyle(node: PositionedNode): any {
+    // Return style based on node type
+    return this.getNodeStyleByType(node.type);
+  }
+  
+  /**
+   * Get edge stroke color
+   * @param edge Edge data
+   * @param index Edge index
+   */
+  private getEdgeStroke(edge: PositionedEdge, index: number): string {
+    // Use highlight color if connected to highlighted node
+    if (this.highlightedNodeId && (edge.from === this.highlightedNodeId || edge.to === this.highlightedNodeId)) {
+      return '#FF5630';
+    }
     
-    // Calculate padding
-    const padding = 40;
+    // Use edge-specific style if available
+    if (edge.style) {
+      return edge.style;
+    }
     
-    // Calculate scale factor to fit in container
-    const diagramWidth = maxX - minX + padding * 2;
-    const diagramHeight = maxY - minY + padding * 2;
-    const scaleX = this.width / diagramWidth;
-    const scaleY = this.height / diagramHeight;
-    const scale = Math.min(scaleX, scaleY, 1); // Don't scale up beyond 1
+    return this.options.edgeStyle?.stroke || '#6B778C';
+  }
+  
+  /**
+   * Get edge dash array for different line styles
+   * @param edge Edge data
+   */
+  private getEdgeDashArray(edge: PositionedEdge): string {
+    const style = edge.style || 'solid';
     
-    // Apply transform to fit
-    if (scale < 1) {
-      this.svg.attr('transform', `translate(${this.margin.left - minX * scale + padding},${this.margin.top - minY * scale + padding}) scale(${scale})`);
-    } else {
-      // Center the diagram
-      const centerX = (this.width - diagramWidth) / 2;
-      const centerY = (this.height - diagramHeight) / 2;
-      this.svg.attr('transform', `translate(${this.margin.left - minX + centerX + padding},${this.margin.top - minY + centerY + padding})`);
+    switch (style) {
+      case 'dashed':
+        return '5,5';
+      case 'dotted':
+        return '2,2';
+      case 'solid':
+      default:
+        return '';
     }
   }
-
+  
   /**
-   * Highlights a specific node in the diagram
+   * Show tooltip for a node
+   * @param event Mouse event
+   * @param node Node data
+   */
+  private showNodeTooltip(event: any, node: PositionedNode): void {
+    let tooltipContent = `<div><strong>${node.label}</strong></div>`;
+    tooltipContent += `<div style="opacity: 0.8">Type: ${node.type}</div>`;
+    
+    // Add properties if available
+    if (node.properties && Object.keys(node.properties).length > 0) {
+      tooltipContent += '<div style="margin-top: 5px; border-top: 1px solid #ddd; padding-top: 5px;">';
+      
+      for (const [key, value] of Object.entries(node.properties)) {
+        if (typeof value !== 'object') {
+          tooltipContent += `<div><strong>${key}:</strong> ${value}</div>`;
+        }
+      }
+      
+      tooltipContent += '</div>';
+    }
+    
+    this.tooltip
+      .style('visibility', 'visible')
+      .style('left', (event.pageX + 10) + 'px')
+      .style('top', (event.pageY - 28) + 'px')
+      .html(tooltipContent);
+  }
+  
+  /**
+   * Show tooltip for an edge
+   * @param event Mouse event
+   * @param edge Edge data
+   */
+  private showEdgeTooltip(event: any, edge: PositionedEdge): void {
+    const fromNode = this.nodes.find(node => node.id === edge.from);
+    const toNode = this.nodes.find(node => node.id === edge.to);
+    
+    let tooltipContent = '';
+    
+    if (edge.label) {
+      tooltipContent += `<div><strong>${edge.label}</strong></div>`;
+    }
+    
+    if (fromNode && toNode) {
+      tooltipContent += `<div>${fromNode.label} &rarr; ${toNode.label}</div>`;
+    }
+    
+    this.tooltip
+      .style('visibility', 'visible')
+      .style('left', (event.pageX + 10) + 'px')
+      .style('top', (event.pageY - 28) + 'px')
+      .html(tooltipContent);
+  }
+  
+  /**
+   * Hide the tooltip
+   */
+  private hideTooltip(): void {
+    this.tooltip.style('visibility', 'hidden');
+  }
+  
+  /**
+   * Highlight a specific node and its connections
    * @param nodeId ID of the node to highlight
    */
-  public highlightNode(nodeId: string): void {
-    if (!this.nodesLayer) return;
-    
-    // Reset all nodes to normal
-    this.nodesLayer.selectAll('.node path')
-      .style('stroke-width', d => {
-        const nodeType = (d as any).type;
-        switch (nodeType) {
-          case 'process': return this.options.processNodeStyle?.strokeWidth || 2;
-          case 'decision': return this.options.decisionNodeStyle?.strokeWidth || 2;
-          case 'start': return this.options.startNodeStyle?.strokeWidth || 2;
-          case 'end': return this.options.endNodeStyle?.strokeWidth || 2;
-          case 'io': return this.options.ioNodeStyle?.strokeWidth || 2;
-          default: return 2;
-        }
-      })
-      .style('stroke-opacity', 1);
-    
-    // Highlight the selected node
-    this.nodesLayer.select(`.node[data-id="${nodeId}"] path`)
-      .style('stroke-width', 4)
-      .style('stroke', '#ff6600')
-      .style('stroke-opacity', 1);
-    
-    // Bring node to front
-    this.nodesLayer.select(`.node[data-id="${nodeId}"]`).raise();
+  public highlightNode(nodeId: string | null): void {
+    this.highlightedNodeId = nodeId;
+    this.renderNodes();
+    this.renderEdges();
   }
-
+  
   /**
-   * Highlights a specific path through the diagram
-   * @param nodeIds Array of node IDs that form a path
-   */
-  public highlightPath(nodeIds: string[]): void {
-    if (!this.nodesLayer || !this.edgesLayer || nodeIds.length < 2) return;
-    
-    // Reset all nodes and edges to normal
-    this.nodesLayer.selectAll('.node path')
-      .style('stroke-width', d => {
-        const nodeType = (d as any).type;
-        switch (nodeType) {
-          case 'process': return this.options.processNodeStyle?.strokeWidth || 2;
-          case 'decision': return this.options.decisionNodeStyle?.strokeWidth || 2;
-          case 'start': return this.options.startNodeStyle?.strokeWidth || 2;
-          case 'end': return this.options.endNodeStyle?.strokeWidth || 2;
-          case 'io': return this.options.ioNodeStyle?.strokeWidth || 2;
-          default: return 2;
-        }
-      })
-      .style('stroke-opacity', 0.5);
-    
-    this.edgesLayer.selectAll('.edge path')
-      .style('stroke-width', this.options.edgeStyle?.strokeWidth || 2)
-      .style('stroke-opacity', 0.3);
-    
-    // Highlight nodes in the path
-    for (const nodeId of nodeIds) {
-      this.nodesLayer.select(`.node[data-id="${nodeId}"] path`)
-        .style('stroke-width', 3)
-        .style('stroke', '#ff6600')
-        .style('stroke-opacity', 1);
-    }
-    
-    // Highlight edges in the path
-    for (let i = 0; i < nodeIds.length - 1; i++) {
-      const fromId = nodeIds[i];
-      const toId = nodeIds[i + 1];
-      
-      this.edgesLayer.select(`.edge[data-id="${fromId}-${toId}"] path`)
-        .style('stroke-width', 3)
-        .style('stroke', '#ff6600')
-        .style('stroke-opacity', 1);
-    }
-  }
-
-  /**
-   * Updates the diagram data and rerenders
+   * Update the visualization with new node data
    * @param nodes New node data
    * @param edges New edge data
    */
-  public updateData(nodes: Array<{
-    id: string;
-    label: string;
-    type: 'process' | 'decision' | 'start' | 'end' | 'io';
-    position?: { x: number; y: number };
-  }>, edges: Array<{
-    from: string;
-    to: string;
-    label?: string;
-  }>): void {
-    this.options.nodes = nodes;
-    this.options.edges = edges;
+  public updateData(nodes: FlowNode[], edges: FlowEdge[]): void {
+    // Reset highlight state
+    this.highlightedNodeId = null;
+    
+    // Process new data
+    this.processNodes(nodes);
+    this.processEdges(edges);
+    
+    // Perform layout if auto layout is enabled
+    if (this.options.autoLayout) {
+      this.performLayout();
+    }
+    
+    // Render with new data
     this.render();
   }
-
+  
   /**
-   * Updates visualization options and reapplies them
-   * @param options New visualization options
+   * Update visualization options
+   * @param options New options
    */
-  public updateOptions(options: Partial<ExtendedFlowDiagramOptions>): void {
-    this.options = { ...this.options, ...options };
+  public updateOptions(options: Partial<FlowDiagramVisualizationOptions>): void {
+    this.options = this.initializeOptions({ ...this.options, ...options });
+    
+    // Re-create arrow markers with new styles
+    this.svg.select('defs').remove();
+    this.addArrowMarkers();
+    
+    // Re-render with new options
     this.render();
   }
-
+  
   /**
-   * Exports the current diagram as an SVG string
-   * @returns SVG markup as a string
+   * Resize the visualization
+   * @param width New width
+   * @param height New height
    */
-  public exportSVG(): string {
-    const svgElement = this.container.querySelector('svg');
-    if (!svgElement) return '';
+  public resize(width?: number, height?: number): void {
+    this.width = width || this.container.clientWidth || this.width;
+    this.height = height || this.container.clientHeight || this.height;
     
-    // Clone the SVG to avoid modifying the displayed one
-    const clone = svgElement.cloneNode(true) as SVGElement;
+    // Update SVG dimensions
+    this.svg
+      .attr('width', this.width)
+      .attr('height', this.height)
+      .attr('viewBox', [0, 0, this.width, this.height].join(' '));
     
-    // Add any required CSS inline for export
-    const styles = document.createElement('style');
-    styles.textContent = `
-      .flow-diagram-visualization text {
-        font-family: Arial, sans-serif;
-        font-size: 12px;
-      }
-      .node text {
-        font-weight: bold;
-      }
-      .edge path {
-        fill: none;
-      }
-    `;
+    // Re-layout if auto layout is enabled
+    if (this.options.autoLayout) {
+      this.performLayout();
+    }
     
-    clone.insertBefore(styles, clone.firstChild);
-    
-    return new XMLSerializer().serializeToString(clone);
+    // Re-render
+    this.render();
   }
-
+  
   /**
-   * Destroys the visualization and cleans up resources
+   * Fit the diagram to the container
+   */
+  public fitToContainer(): void {
+    // Find the bounds of all nodes
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    
+    this.nodes.forEach(node => {
+      minX = Math.min(minX, node.x - node.width / 2);
+      minY = Math.min(minY, node.y - node.height / 2);
+      maxX = Math.max(maxX, node.x + node.width / 2);
+      maxY = Math.max(maxY, node.y + node.height / 2);
+    });
+    
+    // Add padding
+    const padding = 40;
+    minX -= padding;
+    minY -= padding;
+    maxX += padding;
+    maxY += padding;
+    
+    // Calculate scale and transform
+    const width = maxX - minX;
+    const height = maxY - minY;
+    
+    const scale = Math.min(
+      this.width / width,
+      this.height / height,
+      2 // Maximum scale
+    );
+    
+    const translateX = -minX * scale + (this.width - width * scale) / 2;
+    const translateY = -minY * scale + (this.height - height * scale) / 2;
+    
+    // Apply transform
+    this.svg.transition().duration(500).call(
+      this.zoom.transform,
+      d3.zoomIdentity.translate(translateX, translateY).scale(scale)
+    );
+  }
+  
+  /**
+   * Clean up resources when the visualization is no longer needed
    */
   public destroy(): void {
-    // Remove SVG
-    d3.select(this.container).selectAll('svg').remove();
+    // Remove event listeners
+    if (this.svg) {
+      this.svg.on('.zoom', null);
+      this.svg.selectAll('*').on('mouseover', null).on('mouseout', null).on('click', null);
+    }
     
-    // Remove any event listeners or resize observers
-    // (Implementation would depend on specific setup)
+    // Clear the container
+    if (this.container) {
+      this.container.innerHTML = '';
+    }
   }
 }
