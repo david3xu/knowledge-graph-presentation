@@ -579,8 +579,8 @@ export class TreeDiagramVisualization {
     const linksGroup = this.mainGroup.append('g')
       .attr('class', 'tree-links');
       
-    const nodesGroup = this.mainGroup.append('g')
-      .attr('class', 'tree-nodes');
+    // const nodesGroup = this.mainGroup.append('g')
+    //   .attr('class', 'tree-nodes');
       
     // Calculate initial translation to center the tree
     if (this.options.centerRoot && this.options.orientation !== 'radial') {
@@ -608,7 +608,7 @@ export class TreeDiagramVisualization {
     this.createTreeLinks(linksGroup);
     
     // Create tree nodes
-    this.createTreeNodes(nodesGroup);
+    this.createTreeNodes();
     
     // Select nodes if specified
     if (this.options.selectedNodeIds && this.options.selectedNodeIds.length > 0) {
@@ -655,7 +655,7 @@ export class TreeDiagramVisualization {
     if (this.options.callbacks?.onEdgeClick) {
       this.edgeElements
         .style('cursor', 'pointer')
-        .on('click', (event, d) => {
+        .on('click', (_, d) => {
           if (this.options.callbacks?.onEdgeClick) {
             this.options.callbacks.onEdgeClick(
               d.source.data.id, 
@@ -682,9 +682,8 @@ export class TreeDiagramVisualization {
   
   /**
    * Create tree nodes
-   * @param nodesGroup SVG group for nodes
    */
-  private createTreeNodes(nodesGroup: d3.Selection<SVGGElement, unknown, null, undefined>): void {
+  private createTreeNodes(): void {
     // Create node elements
     this.nodeElements = this.mainGroup.select<SVGGElement>('.tree-nodes')
       .selectAll<SVGGElement, d3.HierarchyPointNode<TreeNode>>('.tree-node')
@@ -725,7 +724,7 @@ export class TreeDiagramVisualization {
       if (this.options.callbacks?.onNodeClick) {
         nodeSelection
           .style('cursor', 'pointer')
-          .on('click', (event, d) => {
+          .on('click', (_, d) => {
             if (this.options.callbacks?.onNodeClick) {
               this.options.callbacks.onNodeClick(d.data.id, d.data);
             }
@@ -963,7 +962,7 @@ export class TreeDiagramVisualization {
     if (this.options.callbacks?.onEdgeClick) {
       newLinks
         .style('cursor', 'pointer')
-        .on('click', (event, d) => {
+        .on('click', (_, d) => {
           if (this.options.callbacks?.onEdgeClick) {
             this.options.callbacks.onEdgeClick(
               d.source.data.id,
@@ -1053,7 +1052,7 @@ export class TreeDiagramVisualization {
       if (this.options.callbacks?.onNodeClick) {
         nodeSelection
           .style('cursor', 'pointer')
-          .on('click', (event, d) => {
+          .on('click', (_, d) => {
             if (this.options.callbacks?.onNodeClick) {
               this.options.callbacks.onNodeClick(d.data.id, d.data);
             }
@@ -1336,7 +1335,7 @@ export class TreeDiagramVisualization {
    * @param event Drag event
    * @param d Node data
    */
-  private dragStarted(event: any, d: d3.HierarchyPointNode<TreeNode>): void {
+  private dragStarted(): void {
     if (this.options.zoomable) {
       this.svg.on('.zoom', null);
     }
@@ -1372,7 +1371,7 @@ export class TreeDiagramVisualization {
    * @param event Drag event
    * @param d Node data
    */
-  private dragEnded(event: any, d: d3.HierarchyPointNode<TreeNode>): void {
+  private dragEnded(): void {
     if (this.options.zoomable) {
       this.svg.call(this.zoom);
     }

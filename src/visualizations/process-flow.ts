@@ -350,12 +350,12 @@ export class ProcessFlowVisualization {
     
     // Get direction parameters
     const isHorizontal = this.options.direction === 'LR' || this.options.direction === 'RL';
-    const rankDir = {
-      'TB': [0, 1],
-      'LR': [1, 0],
-      'RL': [-1, 0],
-      'BT': [0, -1]
-    }[this.options.direction || 'TB'];
+    // const rankDir = {
+    //   'TB': [0, 1],
+    //   'LR': [1, 0],
+    //   'RL': [-1, 0],
+    //   'BT': [0, -1]
+    // }[this.options.direction || 'TB'];
     
     // First, establish ranks (levels) for each node
     const ranks = this.assignRanks();
@@ -375,10 +375,10 @@ export class ProcessFlowVisualization {
     
     // Position nodes based on rank
     const nodeWidth = this.options.nodeSize?.width ?? 100;
-    const nodeHeight = this.options.nodeSize?.height ?? 60;
+    // const nodeHeight = this.options.nodeSize?.height ?? 60;
     const nodeSpacing = this.options.nodeSpacing ?? 50;
     const rankSeparation = this.options.rankSeparation ?? 100;
-    const direction = this.options.direction ?? 'TB';
+    // const direction = this.options.direction ?? 'TB';
     
     nodesByRank.forEach((nodes, rank) => {
       // Position nodes within each rank
@@ -554,7 +554,7 @@ export class ProcessFlowVisualization {
     if (this.options.onNodeClick) {
       this.nodeElements
         .style('cursor', 'pointer')
-        .on('click', (event, d) => {
+        .on('click', (_, d) => {
           if (this.options.onNodeClick) {
             this.options.onNodeClick(d.id, d);
           }
@@ -797,7 +797,7 @@ export class ProcessFlowVisualization {
   /**
    * Handle drag start event
    */
-  private dragStarted(event: any, d: ProcessNode): void {
+  private dragStarted(event: any): void {
     d3.select(event.sourceEvent.currentTarget).raise().classed('dragging', true);
   }
   
@@ -819,7 +819,7 @@ export class ProcessFlowVisualization {
   /**
    * Handle drag end event
    */
-  private dragEnded(event: any, d: ProcessNode): void {
+  private dragEnded(event: any): void {
     d3.select(event.sourceEvent.currentTarget).classed('dragging', false);
   }
   
@@ -858,7 +858,7 @@ export class ProcessFlowVisualization {
     if (this.options.curvedEdges) {
       // Calculate control points for curved path
       const dx = points.end.x - points.start.x;
-      const dy = points.end.y - points.start.y;
+      // const dy = points.end.y - points.start.y;
       const controlPoint1 = {
         x: points.start.x + dx / 2,
         y: points.start.y

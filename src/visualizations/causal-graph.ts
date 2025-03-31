@@ -115,7 +115,6 @@ export class CausalGraphVisualization {
   private simulation: d3.Simulation<CausalGraphNode, CausalGraphEdge> | null = null;
   private nodeElements: d3.Selection<SVGGElement, CausalGraphNode, BaseType, unknown>;
   private linkElements: d3.Selection<SVGLineElement, CausalGraphEdge, BaseType, unknown>;
-  private markerElements: d3.Selection<SVGPathElement, [string, string], SVGDefsElement, unknown>;
   
   // Default color schemes
   private readonly DEFAULT_NODE_COLORS = {
@@ -150,27 +149,6 @@ export class CausalGraphVisualization {
       .attr('width', this.width)
       .attr('height', this.height)
       .attr('class', 'causal-graph-visualization');
-      
-    // Create marker definitions for arrowheads
-    const defs = this.svg.append('defs');
-    
-    // Create marker for each polarity type
-    const markerData = Object.entries(this.options.edgeStyle?.colorScheme || this.DEFAULT_EDGE_COLORS);
-    this.markerElements = defs.selectAll('marker')
-      .data(markerData)
-      .enter()
-      .append('marker')
-      .attr('id', d => `arrowhead-${d[0]}`)
-      .attr('viewBox', '0 -5 10 10')
-      .attr('refX', 20)
-      .attr('refY', 0)
-      .attr('markerWidth', this.options.edgeStyle?.arrowSize || 6)
-      .attr('markerHeight', this.options.edgeStyle?.arrowSize || 6)
-      .attr('orient', 'auto')
-      .attr('markerUnits', 'userSpaceOnUse')
-      .append('path')
-      .attr('d', 'M0,-5L10,0L0,5')
-      .attr('fill', d => d[1]);
       
     // Create the container groups for nodes and links
     const links = this.svg.append('g').attr('class', 'links');
@@ -289,7 +267,7 @@ export class CausalGraphVisualization {
     // Add click handlers to links if interactive
     if (this.options.interactive && this.options.onEdgeClick) {
       this.linkElements.style('cursor', 'pointer')
-        .on('click', (event, d) => {
+        .on('click', (_, d) => {
           if (this.options.onEdgeClick) {
             this.options.onEdgeClick(d.source.id, d.target.id, d);
           }
@@ -343,16 +321,16 @@ export class CausalGraphVisualization {
     
     // Add node labels
     this.nodeElements.append('text')
-      .attr('dy', d => {
+      .attr('dy', () => {
         return this.options.nodeStyle?.labelPlacement === 'center' ? '.35em' : 
                this.options.nodeStyle?.labelPlacement === 'below' ? 
                (this.options.nodeStyle?.radius || 20) + 15 : '.35em';
       })
-      .attr('dx', d => {
+      .attr('dx', () => {
         return this.options.nodeStyle?.labelPlacement === 'right' ? 
                (this.options.nodeStyle?.radius || 20) + 5 : 0;
       })
-      .attr('text-anchor', d => {
+      .attr('text-anchor', () => {
         return this.options.nodeStyle?.labelPlacement === 'center' ? 'middle' : 
                this.options.nodeStyle?.labelPlacement === 'below' ? 'middle' : 'start';
       })
@@ -362,7 +340,7 @@ export class CausalGraphVisualization {
     // Add click handlers to nodes if interactive
     if (this.options.interactive && this.options.onNodeClick) {
       this.nodeElements.style('cursor', 'pointer')
-        .on('click', (event, d) => {
+        .on('click', (_, d) => {
           if (this.options.onNodeClick) {
             this.options.onNodeClick(d.id, d);
           }
@@ -582,7 +560,7 @@ export class CausalGraphVisualization {
       .attr('stroke-width', this.options.nodeStyle?.borderWidth || 2);
       
     // Highlight specified nodes
-    this.nodeElements.filter(d => (this.options.highlightNodeIds || []).includes(d.id))
+    this.nodeElements.filter(d => nodeIds.includes(d.id))
       .select('circle')
       .attr('stroke', '#FFC107')
       .attr('stroke-width', 4);
@@ -695,18 +673,5 @@ export class CausalGraphVisualization {
     if (this.svg) {
       this.svg.remove();
     }
-  }
-
-  private updateNodeVisibility(nodeId: string, visible: boolean): void {
-    const node = this.nodeElements.filter(d => d.id === nodeId);
-    node.style('opacity', visible ? 1 : 0);
-    node.style('pointer-events', visible ? 'all' : 'none');
-    
-    // Update connected links
-    const connectedLinks = this.linkElements.filter(d => 
-      d.source.id === nodeId || d.target.id === nodeId
-    );
-    connectedLinks.style('opacity', visible ? 1 : 0);
-    connectedLinks.style('pointer-events', visible ? 'all' : 'none');
   }
 }

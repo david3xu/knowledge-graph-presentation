@@ -5,7 +5,7 @@
 import html2pdf from 'html2pdf.js';
 import { PresentationConfig, SlideGroup } from '../types/slide-data';
 import { MarkdownLoader } from '../parser/markdown-loader';
-import { MarkdownParser, markdownToSlideContent } from '../utils/markdown-parser';
+import { markdownToSlideContent } from '../utils/markdown-parser';
 import { EnhancedMarkdownParser } from '../parser/enhanced-markdown-parser';
 import { MarkdownContentRegistry } from './markdown-content-registry';
 
@@ -72,7 +72,6 @@ export interface ExportOptions {
  */
 export class PresentationManager {
   private loader: MarkdownLoader;
-  private parser: MarkdownParser;
   private enhancedParser: EnhancedMarkdownParser;
   private contentRegistry: MarkdownContentRegistry;
   private slideGroups: SlideGroup[] = [];
@@ -87,7 +86,6 @@ export class PresentationManager {
    */
   constructor() {
     this.loader = new MarkdownLoader();
-    this.parser = new MarkdownParser();
     this.enhancedParser = new EnhancedMarkdownParser();
     this.contentRegistry = new MarkdownContentRegistry();
   }
@@ -252,17 +250,16 @@ export class PresentationManager {
       });
       
       // Attempt to classify content to create specialized content entries
-      this.classifyAndRegisterContent(section, sectionId, index);
+      this.classifyAndRegisterContent(section, index);
     });
   }
   
   /**
    * Classifies content and registers specialized entries in the registry
    * @param content Section content
-   * @param baseId Base content ID
    * @param index Section index
    */
-  private classifyAndRegisterContent(content: string, baseId: string, index: number): void {
+  private classifyAndRegisterContent(content: string, index: number): void {
     // Check for definition content
     if (content.includes('**Definition:**') || content.toLowerCase().includes('what is a')) {
       this.contentRegistry.registerContent(`kg-definition${index > 1 ? '-' + index : ''}`, {
@@ -615,68 +612,64 @@ export class PresentationManager {
   }
   
   /**
-   * Exports the presentation as a PDF
+   * Exports the current presentation to PDF
    * @param options Export options
    * @returns Promise that resolves when export is complete
    */
-  public async exportToPDF(options: ExportOptions = {}): Promise<void> {
+  public async exportToPDF(options: {
+    filename?: string;
+    format?: 'a4' | 'a3' | 'letter' | 'legal' | 'tabloid';
+    orientation?: 'portrait' | 'landscape';
+    margin?: number | [number, number, number, number];
+  } = {}): Promise<void> {
     if (this.isExporting) {
       console.warn('Export already in progress');
       return;
     }
-    
-    if (!document.querySelector('.reveal')) {
-      throw new Error('Presentation container not found');
-    }
-    
-    const element = document.querySelector('.reveal') as HTMLElement;
-    const filename = options.filename || `${this.presentationTitle || 'presentation'}.pdf`;
-    
+
     this.isExporting = true;
     
     try {
+      // Get container element
+      const element = document.getElementById('presentation-container');
+      if (!element) {
+        throw new Error('Presentation container not found');
+      }
+      
+      // Set filename
+      const filename = options.filename || 'knowledge-graph-presentation.pdf';
+
+      // Prepare for export
+      this.prepareForExport(options);
+
       // Configure PDF options
       const pdfOptions = {
-        margin: options.margin !== undefined ? options.margin : [0.5, 0.5, 0.5, 0.5],
+        margin: options.margin ?? [10, 10, 10, 10] as [number, number, number, number],
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2 },
-        jsPDF: { 
-          unit: 'in', 
-          format: options.pageSize || 'letter', 
-          orientation: options.orientation || 'landscape' 
+        jsPDF: {
+          unit: 'mm',
+          format: options.format || 'a4',
+          orientation: options.orientation || 'landscape'
         }
       };
       
-      // Show export message
-      this.showExportMessage('Exporting to PDF...');
-      
-      // Prepare presentation for export
-      this.prepareForExport(options);
+      // Show progress message
+      this.showProgressMessage('Exporting to PDF... This may take a moment.');
       
       // Export to PDF
-      await html2pdf().set(pdfOptions).from(element).save();
+      await html2pdf(element).set(pdfOptions).save();
       
       // Cleanup after export
-      this.cleanupAfterExport();
-      
-      // Hide export message
-      this.hideExportMessage();
-      
-      if (this.exportCallback) {
-        this.exportCallback(true);
-      }
+      this.hideProgressMessage();
     } catch (error) {
-      console.error('PDF export failed:', error);
-      this.hideExportMessage();
-      this.cleanupAfterExport();
-      this.showExportError('PDF export failed');
-      
-      if (this.exportCallback) {
-        this.exportCallback(false, error as Error);
-      }
+      console.error('Error exporting to PDF:', error);
+      this.hideProgressMessage();
+      this.showErrorMessage('Failed to export PDF');
     } finally {
       this.isExporting = false;
+      this.cleanupAfterExport();
     }
   }
   
@@ -730,7 +723,7 @@ export class PresentationManager {
       }
     } catch (error) {
       console.error('HTML export failed:', error);
-      this.showExportError('HTML export failed');
+      this.showErrorMessage('HTML export failed');
       
       if (this.exportCallback) {
         this.exportCallback(false, error as Error);
@@ -806,7 +799,7 @@ export class PresentationManager {
    */
   private prepareNotesForExport(): void {
     const notes = document.querySelectorAll('.notes');
-    notes.forEach((note, index) => {
+    notes.forEach((note) => {
       const noteContainer = document.createElement('div');
       noteContainer.className = 'exported-notes';
       noteContainer.innerHTML = `<h3>Speaker Notes</h3>${note.innerHTML}`;
@@ -875,7 +868,7 @@ export class PresentationManager {
    * Shows an export progress message
    * @param message Message to display
    */
-  private showExportMessage(message: string): void {
+  private showProgressMessage(message: string): void {
     // Create or update message element
     let messageEl = document.getElementById('export-message');
     if (!messageEl) {
@@ -900,7 +893,7 @@ export class PresentationManager {
   /**
    * Hides the export message
    */
-  private hideExportMessage(): void {
+  private hideProgressMessage(): void {
     const messageEl = document.getElementById('export-message');
     if (messageEl) {
       messageEl.style.display = 'none';
@@ -911,9 +904,9 @@ export class PresentationManager {
    * Shows an export error message
    * @param error Error message to display
    */
-  private showExportError(error: string): void {
-    this.showExportMessage(`Error: ${error}`);
-    setTimeout(() => this.hideExportMessage(), 3000);
+  private showErrorMessage(error: string): void {
+    this.showProgressMessage(`Error: ${error}`);
+    setTimeout(() => this.hideProgressMessage(), 3000);
   }
 }
 

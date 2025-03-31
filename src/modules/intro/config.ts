@@ -16,7 +16,7 @@ export class IntroConfigFactory extends BaseConfigFactory {
     }
   }
   
-  private createConceptGraphConfig(data: any, options?: any): any {
+  private createConceptGraphConfig(_data: any, options?: any): any {
     // Create configuration for concept graph visualization
     return {
       layout: {
@@ -48,7 +48,7 @@ export class IntroConfigFactory extends BaseConfigFactory {
     };
   }
   
-  private createEvolutionTimelineConfig(data: any, options?: any): any {
+  private createEvolutionTimelineConfig(_data: any, options?: any): any {
     // Create configuration for evolution timeline visualization
     return {
       orientation: options?.orientation || 'horizontal',

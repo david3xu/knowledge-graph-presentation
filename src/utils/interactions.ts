@@ -476,9 +476,9 @@ export class InteractionManager {
       const centerY = (touch1.clientY + touch2.clientY) / 2;
       
       // Calculate initial distance for pinch
-      const dx = touch1.clientX - touch2.clientX;
-      const dy = touch1.clientY - touch2.clientY;
-      const initialDistance = Math.sqrt(dx * dx + dy * dy);
+      // const dx = touch1.clientX - touch2.clientX;
+      // const dy = touch1.clientY - touch2.clientY;
+      // const initialDistance = Math.sqrt(dx * dx + dy * dy);
       
       this.panZoomState.active = true;
       this.panZoomState.initialScale = this.panZoomState.currentScale;
@@ -711,7 +711,7 @@ export class InteractionManager {
    * @param event Touch event
    * @private
    */
-  private handleTouchCancel = (event: TouchEvent): void => {
+  private handleTouchCancel = (): void => {
     // Skip if interactions are disabled
     if (!this.options.enabled) {
       return;
@@ -1056,7 +1056,7 @@ export function createHoverEffect(
   const glowColor = options.glowColor || 'rgba(0, 123, 255, 0.5)';
   const highlightColor = options.highlightColor;
   const fadeInDuration = options.fadeInDuration || 200;
-  const fadeOutDuration = options.fadeOutDuration || 300;
+  // const fadeOutDuration = options.fadeOutDuration || 300;
   
   // Store original styles
   const originalTransform = element.style.transform;
@@ -1130,7 +1130,7 @@ export function createDraggable(
   } = {}
 ): () => void {
   // Default options
-  const container = options.container || document.body;
+  // const container = options.container || document.body;
   const handle = options.handleSelector ? element.querySelector(options.handleSelector) : element;
   const axis = options.axis || 'both';
   

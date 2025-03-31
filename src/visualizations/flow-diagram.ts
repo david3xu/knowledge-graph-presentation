@@ -890,8 +890,8 @@ export class FlowDiagramVisualization {
     // Update edge paths
     allEdgeGroups.select<SVGPathElement>('path.edge-path')
       .attr('d', d => this.generateEdgePath(d))
-      .attr('stroke', (d, i) => this.getEdgeStroke(d, i))
-      .attr('stroke-width', d => this.options.edgeStyle?.strokeWidth || 2)
+      .attr('stroke', (d: any) => this.getEdgeStroke(d))
+      .attr('stroke-width', () => this.options.edgeStyle?.strokeWidth || 2)
       .attr('stroke-dasharray', d => this.getEdgeDashArray(d))
       .attr('marker-end', d => this.highlightedNodeId && 
                                (d.from === this.highlightedNodeId || d.to === this.highlightedNodeId) 
@@ -961,7 +961,7 @@ export class FlowDiagramVisualization {
     // Update node shapes
     allNodeGroups.select<SVGPathElement>('path.node-shape')
       .attr('d', d => d.pathData || '')
-      .attr('fill', (d, i) => this.getNodeFill(d, i))
+      .attr('fill', (d) => this.getNodeFill(d))
       .attr('stroke', d => this.getNodeStyle(d).stroke)
       .attr('stroke-width', d => this.highlightedNodeId === d.id 
                                ? (this.getNodeStyle(d).strokeWidth || 2) + 2 
@@ -1016,7 +1016,7 @@ export class FlowDiagramVisualization {
         // Center the text vertically
         const totalHeight = lineNumber * lineHeight;
         textElement.selectAll('tspan')
-          .attr('dy', (d, i) => `${i * lineHeight - totalHeight/2 + 0.3}em`);
+          .attr('dy', (_, i) => `${i * lineHeight - totalHeight/2 + 0.3}em`);
       });
   }
   
@@ -1025,7 +1025,7 @@ export class FlowDiagramVisualization {
    */
   private createDragBehavior(): d3.DragBehavior<SVGGElement, PositionedNode, unknown> {
     return d3.drag<SVGGElement, PositionedNode>()
-      .on('start', (event, d) => {
+      .on('start', (event, _) => {
         event.sourceEvent.stopPropagation(); // Prevent zoom behavior
       })
       .on('drag', (event, d) => {
@@ -1072,9 +1072,8 @@ export class FlowDiagramVisualization {
   /**
    * Get node fill color
    * @param node Node data
-   * @param index Node index
    */
-  private getNodeFill(node: PositionedNode, index: number): string {
+  private getNodeFill(node: PositionedNode): string {
     const style = this.getNodeStyle(node);
     return style.fill || '#4C9AFF';
   }
@@ -1091,9 +1090,8 @@ export class FlowDiagramVisualization {
   /**
    * Get edge stroke color
    * @param edge Edge data
-   * @param index Edge index
    */
-  private getEdgeStroke(edge: PositionedEdge, index: number): string {
+  private getEdgeStroke(edge: PositionedEdge): string {
     // Use highlight color if connected to highlighted node
     if (this.highlightedNodeId && (edge.from === this.highlightedNodeId || edge.to === this.highlightedNodeId)) {
       return '#FF5630';

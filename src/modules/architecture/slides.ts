@@ -1,5 +1,5 @@
 import { BaseSlideFactory } from '../../utils/templates/slide-factory';
-import { SlideConfig, SlideTemplateParams } from '../../types/slide-data';
+import { SlideConfig } from '../../types/slide-data';
 
 export class ArchitectureSlideFactory extends BaseSlideFactory {
   public createDomainSlide(

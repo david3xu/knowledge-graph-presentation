@@ -55,7 +55,7 @@ export class ImplementationRoadmapConfigFactory extends BaseConfigFactory {
     };
   }
   
-  private createTimelineConfig(data: any, options?: any): any {
+  private createTimelineConfig(_data: any, options?: any): any {
     return {
       orientation: options?.orientation || 'horizontal',
       axisPosition: options?.axisPosition || 'middle',
@@ -81,7 +81,7 @@ export class ImplementationRoadmapConfigFactory extends BaseConfigFactory {
     };
   }
   
-  private createMaturityModelConfig(data: any, options?: any): any {
+  private createMaturityModelConfig(_data: any, options?: any): any {
     return {
       chartType: options?.chartType || 'radar',
       showLabels: options?.showLabels !== false,
@@ -112,7 +112,7 @@ export class ImplementationRoadmapConfigFactory extends BaseConfigFactory {
     };
   }
   
-  private createGanttChartConfig(data: any, options?: any): any {
+  private createGanttChartConfig(_data: any, options?: any): any {
     return {
       timeFormat: options?.timeFormat || '%Y-%m',
       showToday: options?.showToday !== false,

@@ -51,7 +51,10 @@ export class ArchitectureConfigFactory extends BaseConfigFactory {
       animation: {
         sequential: true,
         duration: 800
-      }
+      },
+      // Use data for dynamic configuration
+      layers: data?.layers || [],
+      connections: data?.connections || []
     };
   }
   
@@ -59,14 +62,14 @@ export class ArchitectureConfigFactory extends BaseConfigFactory {
     // Create configuration for technology matrix visualization
     return {
       cellSize: {
-        width: 200,
-        height: 100
+        width: options?.cellWidth || 200,
+        height: options?.cellHeight || 100
       },
-      headerHeight: 40,
-      padding: 10,
+      headerHeight: options?.headerHeight || 40,
+      padding: options?.padding || 10,
       fontSize: {
-        header: 14,
-        cell: 12
+        header: options?.headerFontSize || 14,
+        cell: options?.cellFontSize || 12
       },
       colorMapping: {
         maturity: {
@@ -81,9 +84,12 @@ export class ArchitectureConfigFactory extends BaseConfigFactory {
           'hybrid': '#8777D9'
         }
       },
-      borders: true,
-      interactive: true,
-      highlightOnHover: true
+      borders: options?.borders ?? true,
+      interactive: options?.interactive ?? true,
+      highlightOnHover: options?.highlightOnHover ?? true,
+      // Use data for dynamic configuration
+      technologies: data?.technologies || [],
+      categories: data?.categories || []
     };
   }
   
@@ -91,23 +97,23 @@ export class ArchitectureConfigFactory extends BaseConfigFactory {
     // Create configuration for deployment diagram visualization
     return {
       layout: {
-        direction: 'TB',
-        rankSeparation: 80,
-        nodeSeparation: 50
+        direction: options?.direction || 'TB',
+        rankSeparation: options?.rankSeparation || 80,
+        nodeSeparation: options?.nodeSeparation || 50
       },
       nodeStyle: {
-        width: 180,
-        height: 60,
-        iconSize: 24,
-        fontSize: 12,
-        cornerRadius: 5,
-        padding: 10
+        width: options?.nodeWidth || 180,
+        height: options?.nodeHeight || 60,
+        iconSize: options?.iconSize || 24,
+        fontSize: options?.fontSize || 12,
+        cornerRadius: options?.cornerRadius || 5,
+        padding: options?.padding || 10
       },
       edgeStyle: {
-        width: 1.5,
-        color: '#6B778C',
-        arrowSize: 8,
-        fontSize: 10
+        width: options?.edgeWidth || 1.5,
+        color: options?.edgeColor || '#6B778C',
+        arrowSize: options?.arrowSize || 8,
+        fontSize: options?.edgeFontSize || 10
       },
       iconMapping: {
         'database': 'database',
@@ -123,7 +129,10 @@ export class ArchitectureConfigFactory extends BaseConfigFactory {
         'service': '#6554C0',
         'application': '#FF5630',
         'integration': '#00C7E6'
-      }
+      },
+      // Use data for dynamic configuration
+      nodes: data?.nodes || [],
+      edges: data?.edges || []
     };
   }
 }

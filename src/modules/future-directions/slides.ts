@@ -146,7 +146,7 @@ export class FutureDirectionsSlideFactory extends BaseSlideFactory {
     );
   }
   
-  private createStrategicRecommendationsSlide(content: any, options?: any): SlideConfig {
+  private createStrategicRecommendationsSlide(content: any, _options?: any): SlideConfig {
     return this.createSlide(
       'strategic-recommendations',
       "Strategic Recommendations",

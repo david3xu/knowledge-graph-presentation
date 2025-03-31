@@ -29,8 +29,10 @@ export class QueryMechanismsDataTransformer extends BaseDataTransformer {
         applicability: lang.applicability,
         example: lang.example
       })),
-      comparisonMetrics: rawContent.comparisonMetrics || [],
-      comparisonTable: rawContent.comparisonTable || []
+      comparisonMetrics: options?.comparisonMetrics || rawContent.comparisonMetrics || [],
+      comparisonTable: options?.comparisonTable || rawContent.comparisonTable || [],
+      showExamples: options?.showExamples ?? true,
+      showSyntax: options?.showSyntax ?? true
     };
   }
   
@@ -44,7 +46,10 @@ export class QueryMechanismsDataTransformer extends BaseDataTransformer {
         applicableTo: pattern.applicableTo || [],
         examples: pattern.examples || [],
         diagram: pattern.diagram
-      }))
+      })),
+      showDiagrams: options?.showDiagrams ?? true,
+      showExamples: options?.showExamples ?? true,
+      showApplicability: options?.showApplicability ?? true
     };
   }
   
@@ -59,17 +64,20 @@ export class QueryMechanismsDataTransformer extends BaseDataTransformer {
         resultPreview: example.resultPreview,
         graphData: example.graphData
       })),
-      scenarios: rawContent.scenarios || []
+      scenarios: options?.scenarios || rawContent.scenarios || [],
+      showCode: options?.showCode ?? true,
+      showGraphData: options?.showGraphData ?? true
     };
   }
   
   private transformQueryPerformance(rawContent: any, options?: any): any {
     // Transform query performance data
     return {
-      metrics: rawContent.metrics || [],
-      benchmarks: rawContent.benchmarks || [],
-      optimizationTips: rawContent.optimizationTips || [],
-      chartData: rawContent.chartData || {}
+      metrics: options?.metrics || rawContent.metrics || [],
+      benchmarks: options?.benchmarks || rawContent.benchmarks || [],
+      optimizationTips: options?.optimizationTips || rawContent.optimizationTips || [],
+      chartData: options?.chartData || rawContent.chartData || {},
+      showOptimizationTips: options?.showOptimizationTips ?? true
     };
   }
   

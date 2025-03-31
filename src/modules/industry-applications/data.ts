@@ -22,7 +22,7 @@ export class IndustryApplicationsDataTransformer extends BaseDataTransformer {
   /**
    * Transforms industry matrix data for comparison visualization
    */
-  private transformIndustryMatrixData(rawContent: any, options?: any): any {
+  private transformIndustryMatrixData(rawContent: any, _options?: any): any {
     const industries = rawContent.industryMatrix.industries;
     const capabilities = rawContent.industryMatrix.capabilities;
     
@@ -134,7 +134,7 @@ export class IndustryApplicationsDataTransformer extends BaseDataTransformer {
   /**
    * Transforms case study data
    */
-  private transformCaseStudyData(rawContent: any, options?: any): any {
+  private transformCaseStudyData(rawContent: any, _options?: any): any {
     const caseStudy = rawContent.caseStudy;
     
     return {

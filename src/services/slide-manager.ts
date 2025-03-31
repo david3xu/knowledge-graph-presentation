@@ -669,8 +669,7 @@ export class SlideManager {
       boxWidth: config.boxWidth || 10,
       boxHeight: config.boxHeight || 20,
       lineColor: config.lineColor || '#333',
-      textColor: config.textColor || '#000',
-      boxColor: config.boxColor || '#f5f5f5'
+      textColor: config.textColor || '#000'
     });
     
     // Clear container contents
@@ -756,9 +755,8 @@ export class SlideManager {
   
   /**
    * Handles the Reveal ready event
-   * @param event Ready event
    */
-  private handleRevealReady(event: any): void {
+  private handleRevealReady(): void {
     // Get the initial slide
     const indices = this.revealInstance?.getIndices();
     if (!indices) return;

@@ -3,7 +3,6 @@
  * Renders formatted code snippets with syntax highlighting, line numbers,
  * and highlighted lines for presentations
  */
-import * as d3 from 'd3';
 import { BaseVisualizationConfig } from '../types/chart-config';
 
 /**
@@ -138,8 +137,6 @@ export class CodeBlockVisualization {
   private container: HTMLElement;
   private codeElement: HTMLElement | null = null;
   private options: CodeBlockOptions;
-  private width: number;
-  private height: number;
   private syntaxRules: Record<string, SyntaxRules>;
   private currentTheme: 'dark' | 'light';
   
@@ -198,8 +195,7 @@ export class CodeBlockVisualization {
    */
   constructor(options: CodeBlockOptions) {
     this.container = options.container;
-    this.width = options.width || this.container.clientWidth || 600;
-    this.height = options.height || this.container.clientHeight || 400;
+    // const height = options.height || this.container.clientHeight || 400;
     
     // Initialize syntax highlighting rules
     this.syntaxRules = this.initializeSyntaxRules();
@@ -216,8 +212,6 @@ export class CodeBlockVisualization {
   }
   
   private handleResize(): void {
-    this.width = this.container.clientWidth;
-    this.height = this.container.clientHeight;
     this.initializeCodeBlock();
   }
   

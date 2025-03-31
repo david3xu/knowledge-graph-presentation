@@ -94,7 +94,7 @@ export class QueryMechanismsModule extends BaseModuleTemplate<QueryMechanismsOpt
         ));
       } else {
         // Create individual slides for each selected pattern
-        patterns.forEach(pattern => {
+        patterns.forEach((pattern: any) => {
           const patternDiagramConfig = this.configFactory.createConfig(
             'query-pattern-diagram',
             { pattern }
@@ -121,7 +121,7 @@ export class QueryMechanismsModule extends BaseModuleTemplate<QueryMechanismsOpt
         examplesContent.examples.filter((e: any) => options.exampleLanguages!.includes(e.language)) :
         examplesContent.examples;
       
-      examples.forEach(example => {
+      examples.forEach((example: any) => {
         // Create result graph visualization if available
         const resultGraphConfig = example.graphData ? 
           this.configFactory.createConfig(

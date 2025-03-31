@@ -53,33 +53,33 @@ export class QueryMechanismsConfigFactory extends BaseConfigFactory {
     // Create configuration for query pattern diagram visualization
     return {
       layout: {
-        direction: 'LR',
-        rankSeparation: 100,
-        nodeSeparation: 50,
-        edgeSeparation: 20
+        direction: data?.layout?.direction || 'LR',
+        rankSeparation: data?.layout?.rankSeparation || 100,
+        nodeSeparation: data?.layout?.nodeSeparation || 50,
+        edgeSeparation: data?.layout?.edgeSeparation || 20
       },
       nodeStyle: {
-        shape: 'circle',
-        size: 40,
-        fontSize: 12,
-        labelPosition: 'bottom',
-        color: '#4C9AFF',
-        borderColor: '#0747A6',
-        borderWidth: 2
+        shape: data?.nodeStyle?.shape || 'circle',
+        size: data?.nodeStyle?.size || 40,
+        fontSize: data?.nodeStyle?.fontSize || 12,
+        labelPosition: data?.nodeStyle?.labelPosition || 'bottom',
+        color: data?.nodeStyle?.color || '#4C9AFF',
+        borderColor: data?.nodeStyle?.borderColor || '#0747A6',
+        borderWidth: data?.nodeStyle?.borderWidth || 2
       },
       edgeStyle: {
-        arrowShape: 'triangle',
-        color: '#6B778C',
-        width: 1.5,
-        labelFontSize: 10,
-        labelColor: '#172B4D',
-        labelBackgroundColor: '#FFFFFF'
+        arrowShape: data?.edgeStyle?.arrowShape || 'triangle',
+        color: data?.edgeStyle?.color || '#6B778C',
+        width: data?.edgeStyle?.width || 1.5,
+        labelFontSize: data?.edgeStyle?.labelFontSize || 10,
+        labelColor: data?.edgeStyle?.labelColor || '#172B4D',
+        labelBackgroundColor: data?.edgeStyle?.labelBackgroundColor || '#FFFFFF'
       },
-      highlightPaths: options?.highlightPaths || [],
+      highlightPaths: options?.highlightPaths || data?.highlightPaths || [],
       animation: {
-        stepByStep: true,
-        duration: 500,
-        delay: 200
+        stepByStep: data?.animation?.stepByStep ?? true,
+        duration: data?.animation?.duration || 500,
+        delay: data?.animation?.delay || 200
       }
     };
   }
@@ -88,31 +88,31 @@ export class QueryMechanismsConfigFactory extends BaseConfigFactory {
     // Create configuration for query result graph visualization
     return {
       layout: {
-        name: 'cose-bilkent',
-        animate: true,
-        animationDuration: 500,
-        padding: 30,
-        nodeRepulsion: 4500
+        name: data?.layout?.name || 'cose-bilkent',
+        animate: data?.layout?.animate ?? true,
+        animationDuration: data?.layout?.animationDuration || 500,
+        padding: data?.layout?.padding || 30,
+        nodeRepulsion: data?.layout?.nodeRepulsion || 4500
       },
       nodeStyle: {
-        shape: 'circle',
-        size: 35,
-        color: '#4C9AFF',
-        borderColor: '#0747A6',
-        borderWidth: 2,
-        fontSize: 10,
-        fontColor: '#172B4D',
-        labelPosition: 'bottom'
+        shape: data?.nodeStyle?.shape || 'circle',
+        size: data?.nodeStyle?.size || 35,
+        color: data?.nodeStyle?.color || '#4C9AFF',
+        borderColor: data?.nodeStyle?.borderColor || '#0747A6',
+        borderWidth: data?.nodeStyle?.borderWidth || 2,
+        fontSize: data?.nodeStyle?.fontSize || 10,
+        fontColor: data?.nodeStyle?.fontColor || '#172B4D',
+        labelPosition: data?.nodeStyle?.labelPosition || 'bottom'
       },
       edgeStyle: {
-        width: 1.5,
-        color: '#6B778C',
-        arrowShape: 'triangle',
-        arrowSize: 5,
-        labelFontSize: 8,
-        curvature: 0.2
+        width: data?.edgeStyle?.width || 1.5,
+        color: data?.edgeStyle?.color || '#6B778C',
+        arrowShape: data?.edgeStyle?.arrowShape || 'triangle',
+        arrowSize: data?.edgeStyle?.arrowSize || 5,
+        labelFontSize: data?.edgeStyle?.labelFontSize || 8,
+        curvature: data?.edgeStyle?.curvature || 0.2
       },
-      highlightResults: true,
+      highlightResults: data?.highlightResults ?? true,
       focusOnResults: options?.focusOnResults !== false,
       interactive: options?.interactive !== false
     };
@@ -121,30 +121,30 @@ export class QueryMechanismsConfigFactory extends BaseConfigFactory {
   private createPerformanceChartConfig(data: any, options?: any): any {
     // Create configuration for performance chart visualization
     return {
-      chartType: options?.chartType || 'bar',
+      chartType: options?.chartType || data?.chartType || 'bar',
       dimensions: {
-        width: 600,
-        height: 400,
-        margin: { top: 20, right: 30, bottom: 60, left: 60 }
+        width: data?.width || 600,
+        height: data?.height || 400,
+        margin: data?.margin || { top: 20, right: 30, bottom: 60, left: 60 }
       },
       axisLabels: {
-        x: options?.xAxisLabel || 'Query Type',
-        y: options?.yAxisLabel || 'Execution Time (ms)'
+        x: options?.xAxisLabel || data?.xAxisLabel || 'Query Type',
+        y: options?.yAxisLabel || data?.yAxisLabel || 'Execution Time (ms)'
       },
-      colors: [
+      colors: data?.colors || [
         '#36B37E', // SPARQL
         '#4C9AFF', // Cypher
         '#6554C0', // Gremlin
         '#FF5630'  // GraphQL
       ],
       legend: {
-        position: 'bottom',
-        alignment: 'center'
+        position: data?.legendPosition || 'bottom',
+        alignment: data?.legendAlignment || 'center'
       },
-      gridLines: true,
+      gridLines: data?.gridLines ?? true,
       animation: {
-        enabled: true,
-        duration: 1000
+        enabled: data?.animationEnabled ?? true,
+        duration: data?.animationDuration || 1000
       }
     };
   }

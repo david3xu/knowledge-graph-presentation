@@ -4,26 +4,26 @@ import { BaseConfigFactory } from '../../utils/templates/config-factory';
 export class FutureDirectionsConfigFactory extends BaseConfigFactory {
   protected createDomainSpecificConfig(
     visualizationType: string, 
-    data: any, 
+    _data: any, 
     options?: any
   ): any {
     switch(visualizationType) {
       case 'trend-map':
-        return this.createTrendMapConfig(data, options);
+        return this.createTrendMapConfig(_data, options);
       case 'technology-radar':
-        return this.createTechnologyRadarConfig(data, options);
+        return this.createTechnologyRadarConfig(_data, options);
       case 'research-network':
-        return this.createResearchNetworkConfig(data, options);
+        return this.createResearchNetworkConfig(_data, options);
       case 'future-timeline':
-        return this.createFutureTimelineConfig(data, options);
+        return this.createFutureTimelineConfig(_data, options);
       case 'impact-matrix':
-        return this.createImpactMatrixConfig(data, options);
+        return this.createImpactMatrixConfig(_data, options);
       default:
         return {};
     }
   }
   
-  private createTrendMapConfig(data: any, options?: any): any {
+  private createTrendMapConfig(_data: any, options?: any): any {
     return {
       mapType: options?.mapType || 'network',
       nodeSizing: options?.nodeSizing || 'impact', // Size nodes based on impact
@@ -59,7 +59,7 @@ export class FutureDirectionsConfigFactory extends BaseConfigFactory {
     };
   }
   
-  private createTechnologyRadarConfig(data: any, options?: any): any {
+  private createTechnologyRadarConfig(_data: any, options?: any): any {
     return {
       rings: options?.rings || [
         { name: 'Adopt', description: 'Technologies ready for mainstream use' },
@@ -96,7 +96,7 @@ export class FutureDirectionsConfigFactory extends BaseConfigFactory {
     };
   }
   
-  private createResearchNetworkConfig(data: any, options?: any): any {
+  private createResearchNetworkConfig(_data: any, options?: any): any {
     return {
       layout: options?.layout || 'force',
       nodeSizing: 'publications',
@@ -132,7 +132,7 @@ export class FutureDirectionsConfigFactory extends BaseConfigFactory {
     };
   }
   
-  private createFutureTimelineConfig(data: any, options?: any): any {
+  private createFutureTimelineConfig(_data: any, options?: any): any {
     return {
       orientation: options?.orientation || 'horizontal',
       timeAxis: {
@@ -169,7 +169,7 @@ export class FutureDirectionsConfigFactory extends BaseConfigFactory {
     };
   }
   
-  private createImpactMatrixConfig(data: any, options?: any): any {
+  private createImpactMatrixConfig(_data: any, options?: any): any {
     return {
       axes: {
         x: {

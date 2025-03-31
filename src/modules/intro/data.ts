@@ -16,7 +16,7 @@ export class IntroDataTransformer extends BaseDataTransformer {
     return this.normalizeContent(rawContent);
   }
   
-  private transformConceptGraphData(rawContent: any, options?: any): GraphData {
+  private transformConceptGraphData(rawContent: any, _options?: any): GraphData {
     // Transform raw content into graph data structure
     const nodes = (rawContent.entities || []).map((entity: any) => ({
       id: entity.id,
@@ -43,7 +43,7 @@ export class IntroDataTransformer extends BaseDataTransformer {
     };
   }
   
-  private transformEvolutionTimelineData(rawContent: any, options?: any): any {
+  private transformEvolutionTimelineData(rawContent: any, _options?: any): any {
     // Transform timeline data
     return {
       periods: (rawContent.periods || []).map((period: any) => ({
@@ -56,20 +56,20 @@ export class IntroDataTransformer extends BaseDataTransformer {
           description: event.description
         }))
       })),
-      orientation: options?.orientation || 'horizontal',
+      orientation: _options?.orientation || 'horizontal',
       startTime: rawContent.startTime || '1960',
       endTime: rawContent.endTime || 'Present'
     };
   }
   
-  private transformDefinitionContent(rawContent: any, options?: any): any {
+  private transformDefinitionContent(rawContent: any, _options?: any): any {
     // Extract definition and key points
     return {
       title: rawContent.title || 'What is a Knowledge Graph?',
       definition: rawContent.definition || '',
       keyPoints: rawContent.keyPoints || [],
       examples: rawContent.examples || [],
-      highlightTerms: options?.highlightTerms || []
+      highlightTerms: _options?.highlightTerms || []
     };
   }
   

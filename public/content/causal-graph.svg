@@ -1,0 +1,139 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+  <!-- Background with subtle grid -->
+  <rect width="800" height="500" fill="#f8f9fa"/>
+  <pattern id="smallGrid" width="10" height="10" patternUnits="userSpaceOnUse">
+    <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#e9ecef" stroke-width="0.5"/>
+  </pattern>
+  <rect width="800" height="500" fill="url(#smallGrid)"/>
+
+  <!-- Arrow definitions -->
+  <defs>
+    <marker id="causalArrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#172B4D"/>
+    </marker>
+    
+    <marker id="strongCausalArrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#FF5630"/>
+    </marker>
+    
+    <marker id="correlationArrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6554C0"/>
+    </marker>
+  </defs>
+
+  <!-- Root cause nodes (red) -->
+  <circle cx="400" cy="80" r="40" fill="#FF8F73" stroke="#DE350B" stroke-width="2"/>
+  
+  <circle cx="200" cy="160" r="35" fill="#FF8F73" stroke="#DE350B" stroke-width="2"/>
+  <circle cx="600" cy="160" r="35" fill="#FF8F73" stroke="#DE350B" stroke-width="2"/>
+
+  <!-- Intermediate nodes (orange) -->
+  <circle cx="120" cy="250" r="35" fill="#FFD700" stroke="#FF8C00" stroke-width="2"/>
+  <circle cx="280" cy="250" r="35" fill="#FFD700" stroke="#FF8C00" stroke-width="2"/>
+  <circle cx="520" cy="250" r="35" fill="#FFD700" stroke="#FF8C00" stroke-width="2"/>
+  <circle cx="680" cy="250" r="35" fill="#FFD700" stroke="#FF8C00" stroke-width="2"/>
+
+  <!-- Symptom nodes (blue) -->
+  <circle cx="200" cy="350" r="35" fill="#4C9AFF" stroke="#0747A6" stroke-width="2"/>
+  <circle cx="400" cy="350" r="35" fill="#4C9AFF" stroke="#0747A6" stroke-width="2"/>
+  <circle cx="600" cy="350" r="35" fill="#4C9AFF" stroke="#0747A6" stroke-width="2"/>
+
+  <!-- Final observable symptoms (dark blue) -->
+  <circle cx="300" cy="440" r="40" fill="#0747A6" stroke="#003380" stroke-width="2"/>
+  <circle cx="500" cy="440" r="40" fill="#0747A6" stroke="#003380" stroke-width="2"/>
+
+  <!-- Node text labels -->
+  <text x="400" y="85" font-family="Arial" font-size="12" text-anchor="middle" fill="#ffffff" font-weight="bold">Configuration</text>
+  <text x="400" y="100" font-family="Arial" font-size="12" text-anchor="middle" fill="#ffffff">Error</text>
+  
+  <text x="200" y="165" font-family="Arial" font-size="12" text-anchor="middle" fill="#ffffff" font-weight="bold">Hardware</text>
+  <text x="200" y="180" font-family="Arial" font-size="12" text-anchor="middle" fill="#ffffff">Failure</text>
+  
+  <text x="600" y="165" font-family="Arial" font-size="12" text-anchor="middle" fill="#ffffff" font-weight="bold">Software</text>
+  <text x="600" y="180" font-family="Arial" font-size="12" text-anchor="middle" fill="#ffffff">Update</text>
+  
+  <text x="120" y="245" font-family="Arial" font-size="11" text-anchor="middle" fill="#172B4D" font-weight="bold">Memory</text>
+  <text x="120" y="260" font-family="Arial" font-size="11" text-anchor="middle" fill="#172B4D">Leak</text>
+  
+  <text x="280" y="245" font-family="Arial" font-size="11" text-anchor="middle" fill="#172B4D" font-weight="bold">Storage</text>
+  <text x="280" y="260" font-family="Arial" font-size="11" text-anchor="middle" fill="#172B4D">Failure</text>
+  
+  <text x="520" y="245" font-family="Arial" font-size="11" text-anchor="middle" fill="#172B4D" font-weight="bold">API</text>
+  <text x="520" y="260" font-family="Arial" font-size="11" text-anchor="middle" fill="#172B4D">Incompatibility</text>
+  
+  <text x="680" y="245" font-family="Arial" font-size="11" text-anchor="middle" fill="#172B4D" font-weight="bold">Security</text>
+  <text x="680" y="260" font-family="Arial" font-size="11" text-anchor="middle" fill="#172B4D">Vulnerability</text>
+  
+  <text x="200" y="345" font-family="Arial" font-size="11" text-anchor="middle" fill="#ffffff" font-weight="bold">System</text>
+  <text x="200" y="360" font-family="Arial" font-size="11" text-anchor="middle" fill="#ffffff">Timeout</text>
+  
+  <text x="400" y="345" font-family="Arial" font-size="11" text-anchor="middle" fill="#ffffff" font-weight="bold">Data</text>
+  <text x="400" y="360" font-family="Arial" font-size="11" text-anchor="middle" fill="#ffffff">Corruption</text>
+  
+  <text x="600" y="345" font-family="Arial" font-size="11" text-anchor="middle" fill="#ffffff" font-weight="bold">Service</text>
+  <text x="600" y="360" font-family="Arial" font-size="11" text-anchor="middle" fill="#ffffff">Disruption</text>
+  
+  <text x="300" y="435" font-family="Arial" font-size="12" text-anchor="middle" fill="#ffffff" font-weight="bold">Application</text>
+  <text x="300" y="450" font-family="Arial" font-size="12" text-anchor="middle" fill="#ffffff">Failure</text>
+  
+  <text x="500" y="435" font-family="Arial" font-size="12" text-anchor="middle" fill="#ffffff" font-weight="bold">Customer</text>
+  <text x="500" y="450" font-family="Arial" font-size="12" text-anchor="middle" fill="#ffffff">Impact</text>
+
+  <!-- Connecting lines for causal relationships (strong) -->
+  <line x1="400" y1="120" x2="230" y2="150" stroke="#FF5630" stroke-width="2" stroke-dasharray="5,2" marker-end="url(#strongCausalArrow)"/>
+  <line x1="400" y1="120" x2="570" y2="150" stroke="#FF5630" stroke-width="2" stroke-dasharray="5,2" marker-end="url(#strongCausalArrow)"/>
+  
+  <line x1="200" y1="195" x2="140" y2="220" stroke="#172B4D" stroke-width="2" marker-end="url(#causalArrow)"/>
+  <line x1="200" y1="195" x2="260" y2="220" stroke="#172B4D" stroke-width="2" marker-end="url(#causalArrow)"/>
+  
+  <line x1="600" y1="195" x2="540" y2="220" stroke="#172B4D" stroke-width="2" marker-end="url(#causalArrow)"/>
+  <line x1="600" y1="195" x2="660" y2="220" stroke="#172B4D" stroke-width="2" marker-end="url(#causalArrow)"/>
+  
+  <line x1="120" y1="285" x2="185" y2="320" stroke="#172B4D" stroke-width="2" marker-end="url(#causalArrow)"/>
+  <line x1="280" y1="285" x2="215" y2="320" stroke="#172B4D" stroke-width="2" marker-end="url(#causalArrow)"/>
+  
+  <line x1="280" y1="285" x2="380" y2="320" stroke="#172B4D" stroke-width="2" marker-end="url(#causalArrow)"/>
+  <line x1="520" y1="285" x2="420" y2="320" stroke="#172B4D" stroke-width="2" marker-end="url(#causalArrow)"/>
+  
+  <line x1="520" y1="285" x2="580" y2="320" stroke="#172B4D" stroke-width="2" marker-end="url(#causalArrow)"/>
+  <line x1="680" y1="285" x2="620" y2="320" stroke="#172B4D" stroke-width="2" marker-end="url(#causalArrow)"/>
+  
+  <line x1="200" y1="385" x2="275" y2="410" stroke="#172B4D" stroke-width="2" marker-end="url(#causalArrow)"/>
+  <line x1="400" y1="385" x2="325" y2="410" stroke="#172B4D" stroke-width="2" marker-end="url(#causalArrow)"/>
+  
+  <line x1="400" y1="385" x2="475" y2="410" stroke="#172B4D" stroke-width="2" marker-end="url(#causalArrow)"/>
+  <line x1="600" y1="385" x2="525" y2="410" stroke="#172B4D" stroke-width="2" marker-end="url(#causalArrow)"/>
+  
+  <!-- Connecting lines for correlations (not direct causation) -->
+  <line x1="120" y1="250" x2="520" y2="250" stroke="#6554C0" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#correlationArrow)"/>
+  <line x1="200" y1="350" x2="600" y2="350" stroke="#6554C0" stroke-width="1.5" stroke-dasharray="5,5"/>
+  
+  <!-- Probability labels on selected causal relationships -->
+  <rect x="325" y="115" width="30" height="20" rx="10" fill="white" stroke="#DFE1E6" stroke-width="1"/>
+  <text x="340" y="130" font-family="Arial" font-size="12" text-anchor="middle" fill="#172B4D">0.7</text>
+  
+  <rect x="470" y="115" width="30" height="20" rx="10" fill="white" stroke="#DFE1E6" stroke-width="1"/>
+  <text x="485" y="130" font-family="Arial" font-size="12" text-anchor="middle" fill="#172B4D">0.9</text>
+  
+  <rect x="450" y="370" width="30" height="20" rx="10" fill="white" stroke="#DFE1E6" stroke-width="1"/>
+  <text x="465" y="385" font-family="Arial" font-size="12" text-anchor="middle" fill="#172B4D">0.8</text>
+  
+  <!-- Legend -->
+  <rect x="620" y="380" width="160" height="110" rx="5" fill="rgba(255,255,255,0.9)" stroke="#DFE1E6" stroke-width="1"/>
+  <text x="700" y="400" font-family="Arial" font-size="14" text-anchor="middle" fill="#172B4D" font-weight="bold">Legend</text>
+  
+  <circle cx="640" cy="420" r="10" fill="#FF8F73" stroke="#DE350B" stroke-width="1"/>
+  <text x="710" y="425" font-family="Arial" font-size="12" text-anchor="start" fill="#172B4D">Root Cause</text>
+  
+  <circle cx="640" cy="445" r="10" fill="#FFD700" stroke="#FF8C00" stroke-width="1"/>
+  <text x="710" y="450" font-family="Arial" font-size="12" text-anchor="start" fill="#172B4D">Intermediate Effect</text>
+  
+  <circle cx="640" cy="470" r="10" fill="#4C9AFF" stroke="#0747A6" stroke-width="1"/>
+  <text x="710" y="475" font-family="Arial" font-size="12" text-anchor="start" fill="#172B4D">Observable Symptom</text>
+  
+  <line x1="640" y1="490" x2="660" y2="490" stroke="#172B4D" stroke-width="2" marker-end="url(#causalArrow)"/>
+  <text x="710" y="495" font-family="Arial" font-size="12" text-anchor="start" fill="#172B4D">Causal Relationship</text>
+  
+  <!-- Title -->
+  <text x="400" y="30" font-family="Arial" font-size="20" text-anchor="middle" fill="#172B4D" font-weight="bold">Root Cause Analysis Causal Graph</text>
+</svg>

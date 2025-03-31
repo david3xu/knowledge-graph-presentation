@@ -1,61 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Interactive knowledge graph presentation showcasing concepts, visualizations, and applications">
-  <title>Knowledge Graph Presentation</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      height: 100vh;
-      width: 100vw;
-      overflow: hidden;
-    }
-
-    .reveal {
-      height: 100%;
-      width: 100%;
-    }
-
-    .export-controls {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 100;
-    }
-
-    .export-button {
-      padding: 8px 12px;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-right: 10px;
-    }
-
-    .pdf-button {
-      background-color: #4285f4;
-    }
-
-    .html-button {
-      background-color: #0f9d58;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Graph Presentation System</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.3.1/dist/reveal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.3.1/dist/theme/white.css" id="theme">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        .error-container {
+            padding: 2rem;
+            margin: 1rem;
+            border: 1px solid #f56565;
+            border-radius: 0.5rem;
+            background-color: #fff5f5;
+            color: #c53030;
+        }
+        .reveal .slides {
+            text-align: left;
+        }
+        .reveal h1, .reveal h2, .reveal h3 {
+            color: #2c5282;
+        }
+        .reveal .controls {
+            color: #4299e1;
+        }
+        .reveal .progress {
+            background: rgba(66, 153, 225, 0.2);
+        }
+        .reveal .progress span {
+            background: #4299e1;
+        }
+    </style>
 </head>
 <body>
-  <div class="reveal">
-    <div class="slides">
-      <!-- Slides will be dynamically generated from markdown -->
-      <section>
-        <h1>Loading presentation...</h1>
-        <p>Please wait while the presentation loads.</p>
-      </section>
+    <div id="presentation-container" 
+         data-content-path="content/knowledge-graph.md" 
+         data-advanced-audience>
     </div>
-  </div>
-  
-  <!-- The TypeScript entry point will be compiled and included by Parcel -->
-  <script type="module" src="../src/index.ts"></script>
+    <script src="bundle.js"></script>
 </body>
 </html>

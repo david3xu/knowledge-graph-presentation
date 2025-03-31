@@ -234,163 +234,110 @@ export class ComparisonChartVisualization {
    * Render the radar chart visualization
    */
   private renderRadarChart(): void {
-    const { categories, items } = this.data;
-    const numAxes = categories.length;
     const radius = Math.min(this.innerWidth, this.innerHeight) / 2;
+    const centerX = this.innerWidth / 2;
+    const centerY = this.innerHeight / 2;
     
-    // Reposition chart group to center
-    this.chartGroup.attr('transform', `translate(${this.margin.left + this.innerWidth / 2}, ${this.margin.top + this.innerHeight / 2})`);
-    
-    // Calculate angles for each axis
-    const angleSlice = (Math.PI * 2) / numAxes;
-    
-    // Create scale for radar
-    const maxValue = this.data.maxValue || d3.max(items, d => d3.max(d.values)) || 0;
-    const rScale = d3.scaleLinear()
-      .domain([0, maxValue])
+    // Create scales
+    const valueScale = d3.scaleLinear()
+      .domain([0, this.data.maxValue || 1])
       .range([0, radius]);
     
     // Draw the background circles
     const levels = 5;
-    const backgroundCircles = this.chartGroup.selectAll('.radar-level')
+    this.chartGroup.selectAll('.radar-level')
       .data(d3.range(1, levels + 1))
       .enter()
       .append('circle')
       .attr('class', 'radar-level')
       .attr('r', d => radius * d / levels)
+      .attr('cx', centerX)
+      .attr('cy', centerY)
       .attr('fill', 'none')
       .attr('stroke', '#ddd')
-      .attr('stroke-dasharray', '3,3');
+      .attr('stroke-width', 1);
     
-    // Draw axis lines
-    const axes = this.chartGroup.selectAll('.radar-axis')
-      .data(categories)
+    // Draw the axes
+    this.chartGroup.selectAll('.radar-axis')
+      .data(this.data.categories)
       .enter()
       .append('line')
       .attr('class', 'radar-axis')
-      .attr('x1', 0)
-      .attr('y1', 0)
-      .attr('x2', (d, i) => radius * Math.cos(angleSlice * i - Math.PI / 2))
-      .attr('y2', (d, i) => radius * Math.sin(angleSlice * i - Math.PI / 2))
+      .attr('x1', centerX)
+      .attr('y1', centerY)
+      .attr('x2', (_, i) => centerX + radius * Math.cos(i * 2 * Math.PI / this.data.categories.length - Math.PI / 2))
+      .attr('y2', (_, i) => centerY + radius * Math.sin(i * 2 * Math.PI / this.data.categories.length - Math.PI / 2))
       .attr('stroke', '#999')
       .attr('stroke-width', 1);
     
-    // Draw axis labels
-    if (this.options.showLabels) {
-      const axisLabels = this.chartGroup.selectAll('.radar-axis-label')
-        .data(categories)
-        .enter()
-        .append('text')
-        .attr('class', 'radar-axis-label')
-        .attr('x', (d, i) => (radius + 20) * Math.cos(angleSlice * i - Math.PI / 2))
-        .attr('y', (d, i) => (radius + 20) * Math.sin(angleSlice * i - Math.PI / 2))
-        .attr('text-anchor', (d, i) => {
-          const angle = angleSlice * i - Math.PI / 2;
-          if (Math.abs(angle) < 0.1 || Math.abs(angle - Math.PI) < 0.1) {
-            return 'middle';
-          } else {
-            return angle > 0 && angle < Math.PI ? 'start' : 'end';
-          }
-        })
-        .attr('dominant-baseline', (d, i) => {
-          const angle = angleSlice * i - Math.PI / 2;
-          return Math.abs(angle - Math.PI / 2) < 0.1 ? 'hanging' :
-                 Math.abs(angle + Math.PI / 2) < 0.1 ? 'text-top' : 'middle';
-        })
-        .attr('font-size', '12px')
-        .text(d => d);
-    }
-    
-    // Function to create radar path
-    const radarLine = d3.lineRadial<number>()
-      .angle((d, i) => angleSlice * i - Math.PI / 2)
-      .radius(d => rScale(d))
-      .curve(d3.curveLinearClosed);
-    
-    // Draw radar areas
-    const radarAreas = this.chartGroup.selectAll('.radar-area')
-      .data(items)
+    // Draw the data areas
+    this.chartGroup.selectAll('.radar-area')
+      .data(this.data.items)
       .enter()
       .append('path')
       .attr('class', 'radar-area')
-      .attr('d', d => radarLine(d.values))
-      .attr('fill', d => d.color || this.colorScale(d.name))
-      .attr('fill-opacity', 0.5)
-      .attr('stroke', d => d.color || this.colorScale(d.name))
-      .attr('stroke-width', 2)
-      .style('pointer-events', 'all')
-      .on('mouseover', (event, d) => {
-        if (this.options.tooltips) {
-          this.showItemTooltip(event, d);
-        }
-        
-        // Highlight this area
-        d3.select(event.target)
-          .transition().duration(200)
-          .attr('fill-opacity', 0.8);
-      })
-      .on('mouseout', () => {
-        if (this.options.tooltips) {
-          this.hideTooltip();
-        }
-        
-        // Restore opacity
-        this.chartGroup.selectAll('.radar-area')
-          .transition().duration(200)
-          .attr('fill-opacity', 0.5);
-      })
-      .on('click', (event, d) => {
-        if (this.options.onClick) {
-          this.options.onClick(d.name);
-        }
-      });
-    
-    // Add interaction points
-    if (this.options.tooltips || this.options.showValues) {
-      items.forEach((item, itemIndex) => {
-        item.values.forEach((value, valueIndex) => {
-          const angle = angleSlice * valueIndex - Math.PI / 2;
-          const x = rScale(value) * Math.cos(angle);
-          const y = rScale(value) * Math.sin(angle);
-          
-          // Add point
-          this.chartGroup.append('circle')
-            .attr('class', 'radar-point')
-            .attr('cx', x)
-            .attr('cy', y)
-            .attr('r', 4)
-            .attr('fill', item.color || this.colorScale(item.name))
-            .attr('stroke', '#fff')
-            .attr('stroke-width', 1)
-            .on('mouseover', (event) => {
-              if (this.options.tooltips) {
-                this.showPointTooltip(event, {
-                  item: item.name,
-                  category: categories[valueIndex],
-                  value: value
-                });
-              }
-            })
-            .on('mouseout', () => {
-              if (this.options.tooltips) {
-                this.hideTooltip();
-              }
-            });
-          
-          // Add value label if enabled
-          if (this.options.showValues) {
-            this.chartGroup.append('text')
-              .attr('class', 'radar-value')
-              .attr('x', x * 1.1)
-              .attr('y', y * 1.1)
-              .attr('text-anchor', 'middle')
-              .attr('dominant-baseline', 'middle')
-              .attr('font-size', '10px')
-              .attr('fill', '#555')
-              .text(value);
-          }
+      .attr('d', d => {
+        const points = d.values.map((value, i) => {
+          const angle = i * 2 * Math.PI / this.data.categories.length - Math.PI / 2;
+          const r = valueScale(value);
+          return [
+            centerX + r * Math.cos(angle),
+            centerY + r * Math.sin(angle)
+          ];
         });
-      });
+        return `M ${points.map(p => p.join(',')).join(' L ')} Z`;
+      })
+      .attr('fill', d => d.color || this.colorScale(d.name))
+      .attr('fill-opacity', 0.3)
+      .attr('stroke', d => d.color || this.colorScale(d.name))
+      .attr('stroke-width', 2);
+    
+    // Draw the data points
+    this.chartGroup.selectAll('.radar-point')
+      .data(this.data.items)
+      .enter()
+      .append('g')
+      .attr('class', 'radar-points')
+      .selectAll('circle')
+      .data(d => d.values.map((value, i) => ({
+        item: d.name,
+        category: this.data.categories[i],
+        value: value
+      })))
+      .enter()
+      .append('circle')
+      .attr('class', 'radar-point')
+      .attr('cx', (d, i) => {
+        const angle = i * 2 * Math.PI / this.data.categories.length - Math.PI / 2;
+        return centerX + valueScale(d.value) * Math.cos(angle);
+      })
+      .attr('cy', (d, i) => {
+        const angle = i * 2 * Math.PI / this.data.categories.length - Math.PI / 2;
+        return centerY + valueScale(d.value) * Math.sin(angle);
+      })
+      .attr('r', 4)
+      .attr('fill', d => this.colorScale(d.item))
+      .attr('stroke', '#fff')
+      .attr('stroke-width', 2);
+    
+    // Add labels
+    if (this.options.showLabels) {
+      this.chartGroup.selectAll('.radar-label')
+        .data(this.data.categories)
+        .enter()
+        .append('text')
+        .attr('class', 'radar-label')
+        .attr('x', (_, i) => {
+          const angle = i * 2 * Math.PI / this.data.categories.length - Math.PI / 2;
+          return centerX + (radius + 20) * Math.cos(angle);
+        })
+        .attr('y', (_, i) => {
+          const angle = i * 2 * Math.PI / this.data.categories.length - Math.PI / 2;
+          return centerY + (radius + 20) * Math.sin(angle);
+        })
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'middle')
+        .text(d => d);
     }
   }
   
@@ -444,7 +391,7 @@ export class ComparisonChartVisualization {
         .enter()
         .append('rect')
         .attr('class', `bar-group-${itemIndex}`)
-        .attr('x', (d, i) => x(categories[i])! + itemIndex * barWidth)
+        .attr('x', (_, i) => x(categories[i])! + itemIndex * barWidth)
         .attr('y', d => y(d))
         .attr('width', barWidth)
         .attr('height', d => this.innerHeight - y(d))
@@ -467,7 +414,7 @@ export class ComparisonChartVisualization {
             this.hideTooltip();
           }
         })
-        .on('click', (event, d) => {
+        .on('click', (_, d) => {
           if (this.options.onClick) {
             const categoryIndex = item.values.indexOf(d);
             this.options.onClick(item.name, categories[categoryIndex]);
@@ -492,7 +439,7 @@ export class ComparisonChartVisualization {
           .enter()
           .append('text')
           .attr('class', `bar-label-${itemIndex}`)
-          .attr('x', (d, i) => x(categories[i])! + itemIndex * barWidth + barWidth / 2)
+          .attr('x', (_, i) => x(categories[i])! + itemIndex * barWidth + barWidth / 2)
           .attr('y', d => y(d) - 5)
           .attr('text-anchor', 'middle')
           .attr('font-size', '10px')
@@ -571,7 +518,7 @@ export class ComparisonChartVisualization {
       .enter()
       .append('g')
       .attr('class', 'bar-stack')
-      .attr('fill', (d, i) => items[i].color || this.colorScale(items[i].name));
+      .attr('fill', (_, i) => items[i].color || this.colorScale(items[i].name));
     
     const bars = barGroups.selectAll('rect')
       .data(d => d)
@@ -598,7 +545,7 @@ export class ComparisonChartVisualization {
           this.hideTooltip();
         }
       })
-      .on('click', (event, d: any) => {
+      .on('click', (_, d: any) => {
         if (this.options.onClick) {
           const seriesIndex = (d as any).parentNode.__data__.index;
           const item = items[seriesIndex];
@@ -703,7 +650,7 @@ export class ComparisonChartVisualization {
     items.forEach(item => {
       const bars = categoryGroups.append('rect')
         .attr('class', 'bar')
-        .attr('x', d => x1(item.name)!)
+        .attr('x', () => x1(item.name)!)
         .attr('y', d => y(d[item.name] || 0))
         .attr('width', x1.bandwidth())
         .attr('height', d => this.innerHeight - y(d[item.name] || 0))
@@ -722,7 +669,7 @@ export class ComparisonChartVisualization {
             this.hideTooltip();
           }
         })
-        .on('click', (event, d) => {
+        .on('click', (_, d) => {
           if (this.options.onClick) {
             this.options.onClick(item.name, d.category);
           }
@@ -743,7 +690,7 @@ export class ComparisonChartVisualization {
       if (this.options.showValues) {
         categoryGroups.append('text')
           .attr('class', 'bar-value')
-          .attr('x', d => x1(item.name)! + x1.bandwidth() / 2)
+          .attr('x', () => x1(item.name)! + x1.bandwidth() / 2)
           .attr('y', d => y(d[item.name] || 0) - 5)
           .attr('text-anchor', 'middle')
           .attr('font-size', '10px')
@@ -766,9 +713,9 @@ export class ComparisonChartVisualization {
       .enter()
       .append('g')
       .attr('class', 'legend-item')
-      .attr('transform', (d, i) => `translate(0, ${i * legendItemHeight})`)
+      .attr('transform', (_, i) => `translate(0, ${i * legendItemHeight})`)
       .style('cursor', 'pointer')
-      .on('click', (event, d) => {
+      .on('click', (_, d) => {
         if (this.options.onClick) {
           this.options.onClick(d.name);
         }
@@ -789,7 +736,7 @@ export class ComparisonChartVisualization {
     
     // Add hover behavior
     legend
-      .on('mouseover', function(event, d) {
+      .on('mouseover', function() {
         d3.select(this)
           .transition().duration(200)
           .attr('opacity', 0.7);
@@ -799,35 +746,6 @@ export class ComparisonChartVisualization {
           .transition().duration(200)
           .attr('opacity', 1);
       });
-  }
-  
-  /**
-   * Show tooltip for an item
-   * @param event Mouse event
-   * @param item Item data
-   */
-  private showItemTooltip(event: any, item: any): void {
-    const { categories } = this.data;
-    
-    let tooltipContent = `<div style="font-weight: bold; margin-bottom: 5px;">${item.name}</div>`;
-    tooltipContent += '<table style="border-collapse: collapse;">';
-    
-    categories.forEach((category, i) => {
-      tooltipContent += `
-        <tr>
-          <td style="padding: 2px 8px 2px 0;">${category}:</td>
-          <td style="padding: 2px 0; text-align: right; font-weight: bold;">${item.values[i]}</td>
-        </tr>
-      `;
-    });
-    
-    tooltipContent += '</table>';
-    
-    this.tooltip
-      .style('visibility', 'visible')
-      .style('left', (event.pageX + 10) + 'px')
-      .style('top', (event.pageY - 28) + 'px')
-      .html(tooltipContent);
   }
   
   /**

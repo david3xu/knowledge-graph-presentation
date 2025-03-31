@@ -223,7 +223,7 @@ export class InteractionService extends EventEmitter {
    * Disables all interactive elements
    */
   disableAllElements(): void {
-    for (const [id, element] of this.interactiveElements.entries()) {
+    for (const [id] of this.interactiveElements.entries()) {
       this.disableElement(id);
     }
   }
@@ -232,7 +232,7 @@ export class InteractionService extends EventEmitter {
    * Enables all interactive elements
    */
   enableAllElements(): void {
-    for (const [id, element] of this.interactiveElements.entries()) {
+    for (const [id] of this.interactiveElements.entries()) {
       this.enableElement(id);
     }
   }

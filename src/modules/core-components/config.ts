@@ -23,11 +23,11 @@ export class CoreComponentsConfigFactory extends BaseConfigFactory {
     // Configure visualization for component graph
     return {
       layout: {
-        name: 'cose',
-        idealEdgeLength: 100,
-        nodeOverlap: 20,
-        padding: 30,
-        randomize: false
+        name: data?.layout?.name || 'cose',
+        idealEdgeLength: data?.layout?.idealEdgeLength || 100,
+        nodeOverlap: data?.layout?.nodeOverlap || 20,
+        padding: data?.layout?.padding || 30,
+        randomize: data?.layout?.randomize ?? false
       },
       nodeStyleFunction: (node: any) => {
         // Apply different styles based on node type
@@ -51,10 +51,10 @@ export class CoreComponentsConfigFactory extends BaseConfigFactory {
         }
         return {}; // Default styling
       },
-      physics: true,
-      draggable: true,
-      zoomable: true,
-      tooltips: true,
+      physics: data?.physics ?? true,
+      draggable: data?.draggable ?? true,
+      zoomable: data?.zoomable ?? true,
+      tooltips: data?.tooltips ?? true,
       highlightNodes: options?.highlightNodes || []
     };
   }
@@ -62,25 +62,25 @@ export class CoreComponentsConfigFactory extends BaseConfigFactory {
   private createHierarchyConfig(data: any, options?: any): any {
     // Configure hierarchical visualization
     return {
-      orientation: options?.orientation || 'vertical',
-      nodeSpacing: 60,
-      treeSpacing: 100,
+      orientation: options?.orientation || data?.orientation || 'vertical',
+      nodeSpacing: data?.nodeSpacing || 60,
+      treeSpacing: data?.treeSpacing || 100,
       edgeStyle: {
-        width: 2,
-        color: '#6B778C',
+        width: data?.edgeStyle?.width || 2,
+        color: data?.edgeStyle?.color || '#6B778C',
         arrow: {
-          to: true,
-          scaleFactor: 1
+          to: data?.edgeStyle?.arrow?.to ?? true,
+          scaleFactor: data?.edgeStyle?.arrow?.scaleFactor || 1
         }
       },
       nodeStyle: {
-        width: 160,
-        height: 60,
-        borderRadius: 5,
-        fontSize: 14,
-        textWrap: true
+        width: data?.nodeStyle?.width || 160,
+        height: data?.nodeStyle?.height || 60,
+        borderRadius: data?.nodeStyle?.borderRadius || 5,
+        fontSize: data?.nodeStyle?.fontSize || 14,
+        textWrap: data?.nodeStyle?.textWrap ?? true
       },
-      levelColors: [
+      levelColors: data?.levelColors || [
         '#4C9AFF',  // Level 0
         '#36B37E',  // Level 1
         '#6554C0',  // Level 2
@@ -92,19 +92,19 @@ export class CoreComponentsConfigFactory extends BaseConfigFactory {
   private createComponentTableConfig(data: any, options?: any): any {
     // Configure tabular visualization
     return {
-      columns: [
+      columns: data?.columns || [
         { key: 'name', header: 'Component', width: '20%' },
         { key: 'type', header: 'Type', width: '15%' },
         { key: 'description', header: 'Description', width: '45%' },
         { key: 'examples', header: 'Examples', width: '20%' }
       ],
-      sortable: true,
-      filterable: true,
-      pagination: options?.pagination || false,
-      rowsPerPage: options?.rowsPerPage || 10,
-      striped: true,
-      highlightOnHover: true,
-      cellFormatters: {
+      sortable: data?.sortable ?? true,
+      filterable: data?.filterable ?? true,
+      pagination: options?.pagination || data?.pagination || false,
+      rowsPerPage: options?.rowsPerPage || data?.rowsPerPage || 10,
+      striped: data?.striped ?? true,
+      highlightOnHover: data?.highlightOnHover ?? true,
+      cellFormatters: data?.cellFormatters || {
         examples: (value: any) => Array.isArray(value) ? value.join(', ') : value
       }
     };

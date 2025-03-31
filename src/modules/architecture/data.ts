@@ -26,7 +26,10 @@ export class ArchitectureDataTransformer extends BaseDataTransformer {
         position: layer.position
       })),
       connections: rawContent.connections || [],
-      description: rawContent.description || 'Knowledge Graph Architecture Layers'
+      description: options?.description || rawContent.description || 'Knowledge Graph Architecture Layers',
+      showComponents: options?.showComponents ?? true,
+      showConnections: options?.showConnections ?? true,
+      showPositions: options?.showPositions ?? true
     };
   }
   
@@ -43,7 +46,10 @@ export class ArchitectureDataTransformer extends BaseDataTransformer {
           url: tech.url
         }))
       })),
-      description: rawContent.description || 'Knowledge Graph Technology Stack'
+      description: options?.description || rawContent.description || 'Knowledge Graph Technology Stack',
+      showMaturity: options?.showMaturity ?? true,
+      showType: options?.showType ?? true,
+      showUrls: options?.showUrls ?? true
     };
   }
   
@@ -58,7 +64,11 @@ export class ArchitectureDataTransformer extends BaseDataTransformer {
         useCases: model.useCases || [],
         diagram: model.diagram
       })),
-      description: rawContent.description || 'Knowledge Graph Deployment Models'
+      description: options?.description || rawContent.description || 'Knowledge Graph Deployment Models',
+      showAdvantages: options?.showAdvantages ?? true,
+      showDisadvantages: options?.showDisadvantages ?? true,
+      showUseCases: options?.showUseCases ?? true,
+      showDiagrams: options?.showDiagrams ?? true
     };
   }
   

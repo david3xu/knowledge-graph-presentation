@@ -20,7 +20,7 @@ export class DataModelsConfigFactory extends BaseConfigFactory {
     }
   }
   
-  private createRdfTripleConfig(data: any, options?: any): any {
+  private createRdfTripleConfig(_data: any, options?: any): any {
     // Configure RDF triple visualization
     return {
       nodeStyle: {
@@ -57,7 +57,7 @@ export class DataModelsConfigFactory extends BaseConfigFactory {
     };
   }
   
-  private createPropertyGraphConfig(data: any, options?: any): any {
+  private createPropertyGraphConfig(_data: any, options?: any): any {
     // Configure property graph visualization
     return {
       nodeStyle: {
@@ -84,10 +84,10 @@ export class DataModelsConfigFactory extends BaseConfigFactory {
     };
   }
   
-  private createComparisonTableConfig(data: any, options?: any): any {
+  private createComparisonTableConfig(_data: any, options?: any): any {
     // Configure comparison table visualization
     return {
-      headers: data.comparisonTable?.headers || [],
+      headers: _data.comparisonTable?.headers || [],
       headerStyle: {
         backgroundColor: '#172B4D',
         color: '#FFFFFF',
@@ -99,7 +99,7 @@ export class DataModelsConfigFactory extends BaseConfigFactory {
         oddRowColor: '#FFFFFF',
         hoverColor: '#E6EFFC'
       },
-      highlightCells: data.highlightedDifferences?.map((diff: any) => ({
+      highlightCells: _data.highlightedDifferences?.map((diff: any) => ({
         row: diff.row,
         col: diff.col,
         color: '#FFBDAD'
@@ -111,7 +111,7 @@ export class DataModelsConfigFactory extends BaseConfigFactory {
     };
   }
   
-  private createCodeBlockConfig(data: any, options?: any): any {
+  private createCodeBlockConfig(_data: any, options?: any): any {
     // Configure code block visualization
     return {
       language: options?.language || 'text',

@@ -3,7 +3,16 @@ import { BaseConfigFactory } from '../../utils/templates/config-factory';
 
 export class NewModuleConfigFactory extends BaseConfigFactory {
   protected createDomainSpecificConfig(visualizationType: string, data: any, options?: any): any {
-    // Implement domain-specific configuration logic
+    switch(visualizationType) {
+      case 'default':
+        return {
+          type: visualizationType,
+          data: data,
+          options: options
+        };
+      default:
+        return {};
+    }
   }
   
   // Additional domain-specific configuration methods

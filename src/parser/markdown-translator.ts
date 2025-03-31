@@ -3,17 +3,12 @@
  * Provides bidirectional translation between Markdown content and slide configurations
  */
 import { PresentationConfig, SlideConfig, SlideGroup } from '../types/slide-data';
-import { EnhancedMarkdownParser } from './enhanced-markdown-parser';
 
 /**
  * Service for translating between Markdown and slide configurations
  */
 export class MarkdownTranslator {
-  private parser: EnhancedMarkdownParser;
-  
-  constructor() {
-    this.parser = new EnhancedMarkdownParser();
-  }
+  constructor() {}
   
   /**
    * Converts a slide configuration to Markdown
@@ -111,18 +106,5 @@ export class MarkdownTranslator {
     });
     
     return markdown;
-  }
-  
-  /**
-   * Extracts the title from Markdown content
-   * @param markdown Markdown content
-   * @returns Extracted title or undefined
-   */
-  private extractTitle(markdown: string): string | undefined {
-    const titleMatch = markdown.match(/^# (.+?)(\n|$)/m);
-    if (titleMatch) {
-      return titleMatch[1];
-    }
-    return undefined;
   }
 } 

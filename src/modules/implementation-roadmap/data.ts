@@ -34,8 +34,10 @@ export class ImplementationRoadmapDataTransformer extends BaseDataTransformer {
         teamMembers: phase.teamMembers || []
       })),
       totalDuration: phases.reduce((sum: number, phase: any) => sum + (phase.duration || 0), 0),
-      startDate: rawContent.startDate || "Q1 2024",
-      phaseConnections: rawContent.phaseConnections || this.inferPhaseConnections(phases)
+      startDate: options?.startDate || rawContent.startDate || "Q1 2024",
+      phaseConnections: rawContent.phaseConnections || this.inferPhaseConnections(phases),
+      showDependencies: options?.showDependencies ?? true,
+      showRisks: options?.showRisks ?? true
     };
   }
   
@@ -53,9 +55,11 @@ export class ImplementationRoadmapDataTransformer extends BaseDataTransformer {
         deliverables: item.deliverables || [],
         dependencies: item.dependencies || []
       })),
-      startDate: rawContent.startDate || timeline[0]?.date || "2024-01",
-      endDate: rawContent.endDate || timeline[timeline.length - 1]?.date || "2024-12",
-      phases: rawContent.timelinePhases || []
+      startDate: options?.startDate || rawContent.startDate || timeline[0]?.date || "2024-01",
+      endDate: options?.endDate || rawContent.endDate || timeline[timeline.length - 1]?.date || "2024-12",
+      phases: rawContent.timelinePhases || [],
+      showDependencies: options?.showDependencies ?? true,
+      showDeliverables: options?.showDeliverables ?? true
     };
   }
   
@@ -75,7 +79,9 @@ export class ImplementationRoadmapDataTransformer extends BaseDataTransformer {
         outputs: step.outputs || []
       })),
       connections: rawContent.stepConnections || this.inferStepConnections(steps),
-      flowDirection: rawContent.flowDirection || 'TB' // Top to Bottom
+      flowDirection: options?.flowDirection || rawContent.flowDirection || 'TB', // Top to Bottom
+      showDependencies: options?.showDependencies ?? true,
+      highlightCriticalPath: options?.highlightCriticalPath ?? false
     };
   }
   
@@ -95,22 +101,26 @@ export class ImplementationRoadmapDataTransformer extends BaseDataTransformer {
       })),
       dimensions: rawContent.dimensions || [],
       organization: rawContent.organization || null,
-      currentLevel: rawContent.currentLevel || 1,
-      targetLevel: rawContent.targetLevel || levels.length
+      currentLevel: options?.currentLevel || rawContent.currentLevel || 1,
+      targetLevel: options?.targetLevel || rawContent.targetLevel || levels.length,
+      showGaps: options?.showGaps ?? true,
+      highlightCurrentLevel: options?.highlightCurrentLevel ?? true
     };
   }
   
   private transformGeneralRoadmapData(rawContent: any, options?: any): any {
     // Default transformation for roadmap content
     return {
-      title: rawContent.title || "Knowledge Graph Implementation Roadmap",
-      description: rawContent.description || "",
-      overview: rawContent.overview || "",
+      title: options?.title || rawContent.title || "Knowledge Graph Implementation Roadmap",
+      description: options?.description || rawContent.description || "",
+      overview: options?.overview || rawContent.overview || "",
       sections: rawContent.sections || [],
       recommendations: rawContent.recommendations || [],
       considerations: rawContent.considerations || [],
       critical_success_factors: rawContent.criticalSuccessFactors || rawContent.critical_success_factors || [],
-      resources: rawContent.resources || []
+      resources: rawContent.resources || [],
+      showTimeline: options?.showTimeline ?? true,
+      showMilestones: options?.showMilestones ?? true
     };
   }
   

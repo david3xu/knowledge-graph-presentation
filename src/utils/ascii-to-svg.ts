@@ -9,7 +9,6 @@ export interface AsciiToSvgOptions {
     boxHeight?: number;
     lineColor?: string;
     textColor?: string;
-    boxColor?: string;
 }
 
 export class AsciiToSvg {
@@ -18,7 +17,6 @@ export class AsciiToSvg {
   private boxHeight: number;
   private lineColor: string;
   private textColor: string;
-  private boxColor: string;
   
   constructor(options: AsciiToSvgOptions) {
     this.text = options.text;
@@ -26,7 +24,6 @@ export class AsciiToSvg {
     this.boxHeight = options.boxHeight || 20;
     this.lineColor = options.lineColor || '#333';
     this.textColor = options.textColor || '#000';
-    this.boxColor = options.boxColor || '#f5f5f5';
   }
   
   /**

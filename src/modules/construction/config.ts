@@ -92,9 +92,9 @@ export class ConstructionConfigFactory extends BaseConfigFactory {
   /**
    * Creates configuration for data sources table
    */
-  private createDataSourcesTableConfig(data: any, options?: any): any {
+  private createDataSourcesTableConfig(_data: any, options?: any): any {
     return {
-      headers: data.headers,
+      headers: _data.headers,
       headerStyle: {
         backgroundColor: '#172B4D',
         color: '#FFFFFF',
@@ -126,7 +126,7 @@ export class ConstructionConfigFactory extends BaseConfigFactory {
   /**
    * Creates configuration for extraction methods chart
    */
-  private createExtractionMethodsChartConfig(data: any, options?: any): any {
+  private createExtractionMethodsChartConfig(_data: any, options?: any): any {
     return {
       width: options?.width || 700,
       height: options?.height || 400,

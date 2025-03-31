@@ -3,8 +3,7 @@
  * Renders interactive knowledge graph visualizations with nodes and edges
  */
 import { GraphVisualizationOptions } from '../types/chart-config';
-import { GraphData, GraphEdge, NodeStyle, EdgeStyle } from '../types/graph-data';
-import { GraphNode } from '../types/graph-data';
+import { GraphData, NodeStyle, EdgeStyle } from '../types/graph-data';
 import * as d3 from 'd3';
 
 export class GraphVisualization {
@@ -447,8 +446,8 @@ export class GraphVisualization {
       .text((d: any) => d.label || d.id);
     
     this.labelElements = enterTexts.merge(this.labelElements)
-      .attr('font-size', (d: any) => this.options.nodeStyle?.fontSize || 12)
-      .attr('fill', (d: any) => this.options.nodeStyle?.labelColor || '#172B4D');
+      .attr('font-size', () => this.options.nodeStyle?.fontSize || 12)
+      .attr('fill', () => this.options.nodeStyle?.labelColor || '#172B4D');
     
     // Add tooltips and click handlers
     if (this.options.tooltips) {
@@ -480,7 +479,7 @@ export class GraphVisualization {
     
     if (node.properties) {
       const propertyList = Object.entries(node.properties)
-        .filter(([key, value]) => typeof value !== 'object' && value !== undefined)
+        .filter(([, value]) => typeof value !== 'object' && value !== undefined)
         .map(([key, value]) => `<li><strong>${key}:</strong> ${value}</li>`)
         .join('');
       
@@ -506,7 +505,7 @@ export class GraphVisualization {
     
     if (edge.properties) {
       const propertyList = Object.entries(edge.properties)
-        .filter(([key, value]) => typeof value !== 'object' && value !== undefined)
+        .filter(([, value]) => typeof value !== 'object' && value !== undefined)
         .map(([key, value]) => `<li><strong>${key}:</strong> ${value}</li>`)
         .join('');
       

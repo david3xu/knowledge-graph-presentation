@@ -178,6 +178,15 @@ export interface NetworkDiagramOptions {
   
   /** Double-click handler for nodes */
   onDoubleClick?: (node: NetworkNode) => void;
+  
+  /** Background color */
+  backgroundColor?: string;
+  
+  /** Node click handler */
+  onNodeClick?: (node: NetworkNode) => void;
+  
+  /** Link click handler */
+  onLinkClick?: (link: NetworkLink) => void;
 }
 
 /**
@@ -236,7 +245,6 @@ export class NetworkDiagramVisualization {
   private linkElements!: d3.Selection<SVGLineElement, SimulationLink, SVGGElement, unknown>;
   private labelElements!: d3.Selection<SVGTextElement, SimulationNode, SVGGElement, unknown>;
   private highlightedNode: string | null = null;
-  private highlightedLink: string | null = null;
   
   /**
    * Creates a new network diagram visualization
@@ -250,7 +258,7 @@ export class NetworkDiagramVisualization {
     this.options = this.initializeOptions(options);
     
     // Initialize the visualization
-    this.initializeVisualization();
+    this.initialize();
   }
   
   /**
@@ -282,7 +290,6 @@ export class NetworkDiagramVisualization {
       'default': '#8993A4'      // Gray
     };
     
-    // Merge with provided options
     return {
       ...options,
       enableSimulation: options.enableSimulation !== false,
@@ -298,16 +305,9 @@ export class NetworkDiagramVisualization {
       defaultLinkColor: options.defaultLinkColor || defaultLinkColorScheme.default,
       showLegend: options.showLegend !== false,
       tooltips: options.tooltips !== false,
-      communityDetection: options.communityDetection || 'none',
-      centralityMeasure: options.centralityMeasure || 'degree',
-      layout: options.layout || 'force',
-      simulation: {
-        linkDistance: options.simulation?.linkDistance || 100,
-        charge: options.simulation?.charge || -300,
-        collisionRadius: options.simulation?.collisionRadius || ((node: NetworkNode) => (node as SimulationNode).size || 10),
-        centerForce: options.simulation?.centerForce || 0.1,
-        alphaDecay: options.simulation?.alphaDecay || 0.02
-      }
+      backgroundColor: options.backgroundColor || '#fff',
+      onNodeClick: options.onNodeClick,
+      onLinkClick: options.onLinkClick
     };
   }
   
@@ -326,103 +326,228 @@ export class NetworkDiagramVisualization {
       }
     });
     
+    // Generate IDs for nodes if not provided
+    processedData.nodes.forEach((node, index) => {
+      if (!(node as any).id) {
+        (node as any).id = `node-${index}`;
+      }
+    });
+    
     return processedData;
   }
   
   /**
    * Initialize the visualization container and elements
    */
-  private initializeVisualization(): void {
+  private initialize(): void {
     // Clear any existing content
-    this.container.innerHTML = '';
+    d3.select(this.container).selectAll('*').remove();
     
-    // Create SVG element
+    // Create SVG container
     this.svg = d3.select(this.container)
       .append('svg')
       .attr('width', this.width)
-      .attr('height', this.height)
-      .attr('class', 'network-diagram-visualization')
-      .attr('viewBox', [0, 0, this.width, this.height].join(' '))
-      .attr('preserveAspectRatio', 'xMidYMid meet');
+      .attr('height', this.height);
     
-    // Initialize zoom behavior
-    if (this.options.zoomable) {
-      this.zoom = d3.zoom<SVGSVGElement, unknown>()
-        .scaleExtent([0.1, 8])
-        .on('zoom', (event) => {
-          this.container_g.attr('transform', event.transform.toString());
-        });
-      
-      this.svg.call(this.zoom);
-    }
+    // Create main container group
+    this.container_g = this.svg.append('g');
     
-    // Create container group for zooming
-    this.container_g = this.svg.append('g')
-      .attr('class', 'container');
+    // Create groups for different elements
+    this.linksGroup = this.container_g.append('g').attr('class', 'links');
+    this.nodesGroup = this.container_g.append('g').attr('class', 'nodes');
+    this.labelsGroup = this.container_g.append('g').attr('class', 'labels');
     
-    // Add arrow marker definitions for directed links
-    const defs = this.svg.append('defs');
-    defs.append('marker')
-      .attr('id', 'arrowhead')
-      .attr('viewBox', '-10 -5 10 10')
-      .attr('refX', 0)
-      .attr('refY', 0)
-      .attr('orient', 'auto')
-      .attr('markerWidth', 6)
-      .attr('markerHeight', 6)
-      .append('path')
-      .attr('d', 'M-10,-5L0,0L-10,5')
-      .attr('fill', '#999');
+    // Create tooltip
+    this.tooltip = d3.select(this.container)
+      .append('div')
+      .attr('class', 'tooltip')
+      .style('opacity', 0);
     
-    // Create highlighted arrow marker
-    defs.append('marker')
-      .attr('id', 'arrowhead-highlight')
-      .attr('viewBox', '-10 -5 10 10')
-      .attr('refX', 0)
-      .attr('refY', 0)
-      .attr('orient', 'auto')
-      .attr('markerWidth', 6)
-      .attr('markerHeight', 6)
-      .append('path')
-      .attr('d', 'M-10,-5L0,0L-10,5')
-      .attr('fill', '#FF5630');
-    
-    // Create groups for links, nodes, and labels
-    this.linksGroup = this.container_g.append('g')
-      .attr('class', 'links');
-    
-    this.nodesGroup = this.container_g.append('g')
-      .attr('class', 'nodes');
-    
-    this.labelsGroup = this.container_g.append('g')
-      .attr('class', 'labels');
-    
-    // Create legend group
+    // Create legend
     this.legendGroup = this.svg.append('g')
       .attr('class', 'legend')
       .attr('transform', `translate(${this.width - 150}, 20)`);
     
-    // Initialize tooltip
-    this.tooltip = d3.select(this.container)
-      .append('div')
-      .attr('class', 'network-tooltip')
-      .style('position', 'absolute')
-      .style('visibility', 'hidden')
-      .style('background-color', 'white')
-      .style('border', '1px solid #ddd')
-      .style('border-radius', '4px')
-      .style('padding', '8px')
-      .style('pointer-events', 'none')
-      .style('z-index', '10');
+    // Initialize zoom behavior
+    this.zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.1, 4])
+      .on('zoom', (event) => {
+        this.container_g.attr('transform', event.transform);
+      });
     
-    // Process data and initialize simulation
-    this.processNetworkData();
+    this.svg.call(this.zoom);
     
-    // Perform layout algorithm
-    this.performLayout();
+    // Initialize simulation
+    this.initializeSimulation();
     
-    // Render the visualization
-    this.render();
+    // Draw the visualization
+    this.draw();
+  }
+  
+  /**
+   * Initialize the force simulation
+   */
+  private initializeSimulation(): void {
+    if (!this.options.enableSimulation) return;
+    
+    this.simulation = d3.forceSimulation<SimulationNode, SimulationLink>(this.nodes)
+      .force('link', d3.forceLink<SimulationNode, SimulationLink>(this.links)
+        .id(d => d.id)
+        .distance((d: SimulationLink) => {
+          const linkDistance = this.options.simulation?.linkDistance;
+          if (typeof linkDistance === 'function') {
+            return (linkDistance as (link: NetworkLink) => number)(d as unknown as NetworkLink);
+          }
+          return linkDistance || 100;
+        }))
+      .force('charge', d3.forceManyBody<SimulationNode>()
+        .strength(this.options.simulation?.charge || -300))
+      .force('center', d3.forceCenter(this.width / 2, this.height / 2)
+        .strength(this.options.simulation?.centerForce || 0.1))
+      .force('collision', d3.forceCollide<SimulationNode>()
+        .radius(this.options.simulation?.collisionRadius || ((node: NetworkNode) => (node as SimulationNode).size || 10)))
+      .alphaDecay(this.options.simulation?.alphaDecay || 0.02);
+  }
+  
+  /**
+   * Draw the network visualization
+   */
+  private draw(): void {
+    // Draw links
+    this.linkElements = this.linksGroup
+      .selectAll('line')
+      .data(this.links)
+      .enter()
+      .append('line')
+      .attr('class', 'link')
+      .attr('stroke', d => d.color)
+      .attr('stroke-width', d => d.width)
+      .attr('marker-end', d => d.directed ? 'url(#arrowhead)' : null);
+    
+    // Draw nodes
+    this.nodeElements = this.nodesGroup
+      .selectAll('circle')
+      .data(this.nodes)
+      .enter()
+      .append('circle')
+      .attr('class', 'node')
+      .attr('r', d => d.radius)
+      .attr('fill', d => d.color)
+      .attr('stroke', '#fff')
+      .attr('stroke-width', 2);
+    
+    // Draw labels
+    if (this.options.showLabels) {
+      this.labelElements = this.labelsGroup
+        .selectAll('text')
+        .data(this.nodes)
+        .enter()
+        .append('text')
+        .attr('class', 'label')
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'middle')
+        .text(d => d.label)
+        .attr('font-size', d => d.radius * 1.2);
+    }
+    
+    // Add interactions
+    if (this.options.draggable) {
+      this.nodeElements
+        .call(d3.drag<SVGCircleElement, SimulationNode>()
+          .on('start', this.dragStarted.bind(this))
+          .on('drag', this.dragged.bind(this))
+          .on('end', this.dragEnded.bind(this)));
+    }
+    
+    // Add tooltips
+    if (this.options.tooltips) {
+      this.nodeElements
+        .on('mouseover', this.showNodeTooltip.bind(this))
+        .on('mouseout', this.hideTooltip.bind(this));
+      
+      this.linkElements
+        .on('mouseover', this.showLinkTooltip.bind(this))
+        .on('mouseout', this.hideTooltip.bind(this));
+    }
+    
+    // Add click handlers
+    if (this.options.onNodeClick) {
+      this.nodeElements
+        .on('click', (_, d) => this.options.onNodeClick?.(d));
+    }
+    
+    if (this.options.onLinkClick) {
+      this.linkElements
+        .on('click', (_, d) => this.options.onLinkClick?.(d as unknown as NetworkLink));
+    }
+  }
+  
+  /**
+   * Drag started event handler
+   */
+  private dragStarted(event: d3.D3DragEvent<SVGCircleElement, SimulationNode, unknown>, d: SimulationNode): void {
+    if (!event.active) this.simulation?.alphaTarget(0.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+  }
+  
+  /**
+   * Drag event handler
+   */
+  private dragged(event: d3.D3DragEvent<SVGCircleElement, SimulationNode, unknown>, d: SimulationNode): void {
+    d.fx = event.x;
+    d.fy = event.y;
+  }
+  
+  /**
+   * Drag ended event handler
+   */
+  private dragEnded(event: d3.D3DragEvent<SVGCircleElement, SimulationNode, unknown>, d: SimulationNode): void {
+    if (!event.active) this.simulation?.alphaTarget(0);
+    d.fx = null;
+    d.fy = null;
+  }
+  
+  /**
+   * Show tooltip for a node
+   */
+  private showNodeTooltip(event: MouseEvent, d: SimulationNode): void {
+    this.tooltip
+      .style('opacity', 1)
+      .html(`
+        <div class="tooltip-content">
+          <strong>${d.label}</strong><br>
+          Type: ${d.type}<br>
+          Degree: ${d.degree}<br>
+          Centrality: ${d.centrality.toFixed(2)}
+        </div>
+      `)
+      .style('left', (event.pageX + 10) + 'px')
+      .style('top', (event.pageY - 10) + 'px');
+  }
+  
+  /**
+   * Show tooltip for a link
+   */
+  private showLinkTooltip(event: MouseEvent, d: SimulationLink): void {
+    this.tooltip
+      .style('opacity', 1)
+      .html(`
+        <div class="tooltip-content">
+          <strong>${d.type || 'Related'}</strong><br>
+          Weight: ${d.weight || 1}<br>
+          Directed: ${d.directed ? 'Yes' : 'No'}
+        </div>
+      `)
+      .style('left', (event.pageX + 10) + 'px')
+      .style('top', (event.pageY - 10) + 'px');
+  }
+  
+  /**
+   * Hide tooltip
+   */
+  private hideTooltip(): void {
+    this.tooltip.style('opacity', 0);
   }
   
   /**
@@ -794,7 +919,7 @@ export class NetworkDiagramVisualization {
     }
     
     // Assign centrality values to nodes
-    this.data.nodes.forEach((node, i) => {
+    this.data.nodes.forEach((node) => {
       (node as any).centrality = centrality[nodeIndexMap[node.id]];
     });
   }
@@ -840,59 +965,67 @@ export class NetworkDiagramVisualization {
     // Calculate total edge weight
     const m = edges.reduce((sum, e) => sum + e.weight, 0);
     
-    // Calculate initial modularity
-    const k: number[] = Array(n).fill(0); // Degree of each node
+    // Calculate node weights (degree)
+    const k: number[] = Array(n).fill(0);
     edges.forEach(e => {
       k[e.source] += e.weight;
       k[e.target] += e.weight;
     });
     
-    // Build adjacency matrix
-    const adjacency: number[][] = Array(n).fill(0).map(() => Array(n).fill(0));
+    // Build adjacency lists for efficient access
+    const adjacencyList: Record<number, Record<number, number>> = {};
+    for (let i = 0; i < n; i++) {
+      adjacencyList[i] = {};
+    }
+    
     edges.forEach(e => {
-      adjacency[e.source][e.target] += e.weight;
-      adjacency[e.target][e.source] += e.weight;
+      adjacencyList[e.source][e.target] = (adjacencyList[e.source][e.target] || 0) + e.weight;
+      adjacencyList[e.target][e.source] = (adjacencyList[e.target][e.source] || 0) + e.weight;
     });
     
-    // Track community merges
-    let numCommunities = n;
+    // Calculate initial modularity
+    this.calculateModularity(adjacencyList, communities, k, m);
     
-    // Greedy algorithm
-    while (numCommunities > 1) {
-      let bestDeltaQ = 0;
-      let bestMerge = [-1, -1];
+    // First phase of Louvain method
+    let improvement = true;
+    while (improvement) {
+      improvement = false;
       
-      // Find best merge
+      // Try moving each node to its neighbors' communities
       for (let i = 0; i < n; i++) {
-        for (let j = i + 1; j < n; j++) {
-          // Skip if nodes are in the same community
-          if (communities[i] === communities[j]) continue;
+        const currentCommunity = communities[i];
+        
+        // Map of community to gain in modularity
+        const communityGains: Record<number, number> = {};
+        let bestGain = 0;
+        let bestCommunity = currentCommunity;
+        
+        // Calculate gain for each neighboring community
+        Object.entries(adjacencyList[i]).forEach(([neighbor]) => {
+          const neighborCommunity = communities[parseInt(neighbor)];
           
-          // Calculate modularity change if communities were merged
-          const deltaQ = (adjacency[i][j] - k[i] * k[j] / (2 * m)) / (2 * m);
+          // Skip if already checked this community
+          if (communityGains[neighborCommunity] !== undefined) return;
           
-          if (deltaQ > bestDeltaQ) {
-            bestDeltaQ = deltaQ;
-            bestMerge = [communities[i], communities[j]];
+          // Calculate modularity gain
+          const gain = this.calculateModularityGain(
+            i, neighborCommunity, communities, adjacencyList, k, m
+          );
+          
+          communityGains[neighborCommunity] = gain;
+          
+          if (gain > bestGain) {
+            bestGain = gain;
+            bestCommunity = neighborCommunity;
           }
+        });
+        
+        // Move node to best community if it improves modularity
+        if (bestGain > 0 && bestCommunity !== currentCommunity) {
+          communities[i] = bestCommunity;
+          improvement = true;
         }
       }
-      
-      // If no improvement, stop
-      if (bestDeltaQ <= 0 || bestMerge[0] === -1) break;
-      
-      // Merge communities
-      const [c1, c2] = bestMerge;
-      for (let i = 0; i < n; i++) {
-        if (communities[i] === c2) {
-          communities[i] = c1;
-        }
-      }
-      
-      numCommunities--;
-      
-      // Stop early if we've reached a reasonable number of communities
-      if (numCommunities <= Math.sqrt(n)) break;
     }
     
     // Renumber communities to be consecutive
@@ -911,7 +1044,7 @@ export class NetworkDiagramVisualization {
     }
     
     // Assign communities to nodes
-    this.data.nodes.forEach((node, i) => {
+    this.data.nodes.forEach((node) => {
       node.group = communities[nodeIndexMap[node.id]];
     });
   }
@@ -959,7 +1092,7 @@ export class NetworkDiagramVisualization {
     });
     
     // Calculate initial modularity
-    let modularity = this.calculateModularity(adjacencyList, communities, k, m);
+    this.calculateModularity(adjacencyList, communities, k, m);
     
     // First phase of Louvain method
     let improvement = true;
@@ -976,7 +1109,7 @@ export class NetworkDiagramVisualization {
         let bestCommunity = currentCommunity;
         
         // Calculate gain for each neighboring community
-        Object.entries(adjacencyList[i]).forEach(([neighbor, weight]) => {
+        Object.entries(adjacencyList[i]).forEach(([neighbor]) => {
           const neighborCommunity = communities[parseInt(neighbor)];
           
           // Skip if already checked this community
@@ -1019,7 +1152,7 @@ export class NetworkDiagramVisualization {
     }
     
     // Assign communities to nodes
-    this.data.nodes.forEach((node, i) => {
+    this.data.nodes.forEach((node) => {
       node.group = communities[nodeIndexMap[node.id]];
     });
   }
@@ -1036,7 +1169,7 @@ export class NetworkDiagramVisualization {
     communities: number[],
     k: number[],
     m: number
-  ): number {
+  ): void {
     let q = 0;
     
     // For each pair of nodes
@@ -1055,7 +1188,11 @@ export class NetworkDiagramVisualization {
       }
     }
     
-    return q;
+    // Normalize modularity
+    const maxModularity = Math.max(0, q);
+    if (maxModularity > 0) {
+      q /= maxModularity;
+    }
   }
   
   /**
@@ -1077,9 +1214,9 @@ export class NetworkDiagramVisualization {
   ): number {
     // Sum of weights to the target community
     let sumIn = 0;
-    Object.entries(adjacencyList[node]).forEach(([neighbor, weight]) => {
+    Object.entries(adjacencyList[node]).forEach(([neighbor]) => {
       if (communities[parseInt(neighbor)] === targetCommunity) {
-        sumIn += weight;
+        sumIn += adjacencyList[node][parseInt(neighbor)];
       }
     });
     
@@ -1133,19 +1270,19 @@ export class NetworkDiagramVisualization {
     this.simulation = d3.forceSimulation<SimulationNode, SimulationLink>(this.nodes)
       .force('link', d3.forceLink<SimulationNode, SimulationLink>(this.links)
         .id(d => d.id)
-        .distance((d: SimulationLink, i: number, links: SimulationLink[]) => 
-          typeof this.options.simulation?.linkDistance === 'function' 
-            ? (this.options.simulation.linkDistance as any)(d) 
-            : (this.options.simulation?.linkDistance || 100)))
-      .force('charge', d3.forceManyBody<SimulationNode>().strength((d: SimulationNode, i: number, nodes: SimulationNode[]) => 
-        typeof this.options.simulation?.charge === 'function' 
-          ? (this.options.simulation.charge as any)(d) 
-          : (this.options.simulation?.charge || -300)))
-      .force('center', d3.forceCenter(this.width / 2, this.height / 2).strength(this.options.simulation?.centerForce || 0.1))
-      .force('collision', d3.forceCollide<SimulationNode>().radius((d: SimulationNode) => {
-        const collisionRadius = this.options.simulation?.collisionRadius;
-        return typeof collisionRadius === 'function' ? (collisionRadius as any)(d) : (collisionRadius || d.size || 10);
-      }))
+        .distance((d: SimulationLink) => {
+          const linkDistance = this.options.simulation?.linkDistance;
+          if (typeof linkDistance === 'function') {
+            return (linkDistance as (link: NetworkLink) => number)(d as unknown as NetworkLink);
+          }
+          return linkDistance || 100;
+        }))
+      .force('charge', d3.forceManyBody<SimulationNode>()
+        .strength(this.options.simulation?.charge || -300))
+      .force('center', d3.forceCenter(this.width / 2, this.height / 2)
+        .strength(this.options.simulation?.centerForce || 0.1))
+      .force('collision', d3.forceCollide<SimulationNode>()
+        .radius(this.options.simulation?.collisionRadius || ((node: NetworkNode) => (node as SimulationNode).size || 10)))
       .alphaDecay(this.options.simulation?.alphaDecay || 0.02);
     
     // Run simulation for a few iterations
@@ -1182,7 +1319,7 @@ export class NetworkDiagramVisualization {
     
     // Position groups in a circle
     let groupIndex = 0;
-    groups.forEach((nodes, group) => {
+    groups.forEach((nodes) => {
       const angle = (2 * Math.PI * groupIndex) / groups.size;
       const groupX = centerX + radius * Math.cos(angle);
       const groupY = centerY + radius * Math.sin(angle);
@@ -1211,10 +1348,7 @@ export class NetworkDiagramVisualization {
     
     // Add a force to keep nodes close to their assigned positions
     this.simulation!.force('position', d3.forceRadial<SimulationNode>(this.width / 2, this.height / 2)
-      .radius(d => {
-        const group = d.group !== undefined ? d.group : d.type || 'default';
-        return radius;
-      }));
+      .radius(() => radius));
     
     // Run simulation briefly
     for (let i = 0; i < 100; ++i) this.simulation!.tick();
@@ -1536,7 +1670,7 @@ export class NetworkDiagramVisualization {
     
     // Add click handler
     if (this.options.onClick) {
-      this.linkElements.on('click', (event, d) => {
+      this.linkElements.on('click', (_, d) => {
         if (typeof d.source === 'object' && typeof d.target === 'object') {
           this.options.onClick!({
             source: (d.source as SimulationNode).id,
@@ -1626,14 +1760,12 @@ export class NetworkDiagramVisualization {
     
     // Add click handler
     if (this.options.onClick) {
-      this.nodeElements.on('click', (event, d) => {
-        this.options.onClick!(d, 'node');
-      });
+      this.nodeElements.on('click', (_, d) => this.options.onNodeClick?.(d));
     }
     
     // Add double-click handler
     if (this.options.onDoubleClick) {
-      this.nodeElements.on('dblclick', (event, d) => {
+      this.nodeElements.on('dblclick', (_, d) => {
         this.options.onDoubleClick!(d);
       });
     }
@@ -1752,92 +1884,11 @@ export class NetworkDiagramVisualization {
   }
   
   /**
-   * Show tooltip for a node
-   * @param event Mouse event
-   * @param node Node data
-   */
-  private showNodeTooltip(event: any, node: SimulationNode): void {
-    let tooltipContent = `<div style="font-weight: bold; margin-bottom: 5px;">${node.label}</div>`;
-    
-    if (node.type) {
-      tooltipContent += `<div><strong>Type:</strong> ${node.type}</div>`;
-    }
-    
-    if (node.group !== undefined) {
-      tooltipContent += `<div><strong>Group:</strong> ${node.group}</div>`;
-    }
-    
-    if (node.properties && Object.keys(node.properties).length > 0) {
-      tooltipContent += '<div style="margin-top: 5px; padding-top: 5px; border-top: 1px solid #ddd;">';
-      
-      for (const [key, value] of Object.entries(node.properties)) {
-        if (typeof value !== 'object') {
-          tooltipContent += `<div><strong>${key}:</strong> ${value}</div>`;
-        }
-      }
-      
-      tooltipContent += '</div>';
-    }
-    
-    this.tooltip
-      .style('visibility', 'visible')
-      .style('left', (event.pageX + 10) + 'px')
-      .style('top', (event.pageY - 28) + 'px')
-      .html(tooltipContent);
-  }
-  
-  /**
-   * Show tooltip for a link
-   * @param event Mouse event
-   * @param link Link data
-   */
-  private showLinkTooltip(event: any, link: SimulationLink): void {
-    const source = link.source as SimulationNode;
-    const target = link.target as SimulationNode;
-    
-    let tooltipContent = `<div style="font-weight: bold; margin-bottom: 5px;">${source.label} → ${target.label}</div>`;
-    
-    if (link.type) {
-      tooltipContent += `<div><strong>Type:</strong> ${link.type}</div>`;
-    }
-    
-    if (link.weight !== undefined) {
-      tooltipContent += `<div><strong>Weight:</strong> ${link.weight}</div>`;
-    }
-    
-    if (link.properties && Object.keys(link.properties).length > 0) {
-      tooltipContent += '<div style="margin-top: 5px; padding-top: 5px; border-top: 1px solid #ddd;">';
-      
-      for (const [key, value] of Object.entries(link.properties)) {
-        if (typeof value !== 'object') {
-          tooltipContent += `<div><strong>${key}:</strong> ${value}</div>`;
-        }
-      }
-      
-      tooltipContent += '</div>';
-    }
-    
-    this.tooltip
-      .style('visibility', 'visible')
-      .style('left', (event.pageX + 10) + 'px')
-      .style('top', (event.pageY - 28) + 'px')
-      .html(tooltipContent);
-  }
-  
-  /**
-   * Hide the tooltip
-   */
-  private hideTooltip(): void {
-    this.tooltip.style('visibility', 'hidden');
-  }
-  
-  /**
    * Highlight a node and its connections
    * @param nodeId Node ID to highlight
    */
   public highlightNode(nodeId: string): void {
     this.highlightedNode = nodeId;
-    this.highlightedLink = null;
     
     // Find connected links
     const connectedLinkIds = this.links
@@ -1878,7 +1929,6 @@ export class NetworkDiagramVisualization {
    */
   public highlightLink(linkId: string): void {
     this.highlightedNode = null;
-    this.highlightedLink = linkId;
     
     // Find the link
     const link = this.links.find(l => l.id === linkId);
@@ -1918,7 +1968,6 @@ export class NetworkDiagramVisualization {
    */
   public clearHighlight(): void {
     this.highlightedNode = null;
-    this.highlightedLink = null;
     
     // Reset node styles
     if (this.nodeElements) {

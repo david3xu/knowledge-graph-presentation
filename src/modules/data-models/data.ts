@@ -20,8 +20,8 @@ export class DataModelsDataTransformer extends BaseDataTransformer {
   private transformRdfModelData(rawContent: any, options?: any): any {
     // Transform RDF data model content
     return {
-      title: rawContent.title || 'RDF Data Model',
-      description: rawContent.description || 'The Resource Description Framework (RDF) is a standard model for data interchange on the Web.',
+      title: options?.title || rawContent.title || 'RDF Data Model',
+      description: options?.description || rawContent.description || 'The Resource Description Framework (RDF) is a standard model for data interchange on the Web.',
       keyPoints: rawContent.keyPoints || [],
       examples: rawContent.examples || [],
       components: {
@@ -29,15 +29,17 @@ export class DataModelsDataTransformer extends BaseDataTransformer {
         predicates: rawContent.predicates || [],
         objects: rawContent.objects || []
       },
-      triples: rawContent.triples || []
+      triples: rawContent.triples || [],
+      showTriples: options?.showTriples ?? true,
+      showComponents: options?.showComponents ?? true
     };
   }
   
   private transformPropertyGraphData(rawContent: any, options?: any): any {
     // Transform Property Graph data model content
     return {
-      title: rawContent.title || 'Property Graph Model',
-      description: rawContent.description || 'Property graphs store data in nodes and relationships, both of which can have properties.',
+      title: options?.title || rawContent.title || 'Property Graph Model',
+      description: options?.description || rawContent.description || 'Property graphs store data in nodes and relationships, both of which can have properties.',
       keyPoints: rawContent.keyPoints || [],
       examples: rawContent.examples || [],
       components: {
@@ -45,30 +47,34 @@ export class DataModelsDataTransformer extends BaseDataTransformer {
         relationships: rawContent.relationships || [],
         properties: rawContent.properties || []
       },
-      graphStructure: rawContent.graphStructure || {}
+      graphStructure: rawContent.graphStructure || {},
+      showGraphStructure: options?.showGraphStructure ?? true,
+      showComponents: options?.showComponents ?? true
     };
   }
   
   private transformModelComparisonData(rawContent: any, options?: any): any {
     // Transform comparison data between different models
     return {
-      title: rawContent.title || 'Data Model Comparison',
-      description: rawContent.description || 'Comparison of different knowledge graph data models',
+      title: options?.title || rawContent.title || 'Data Model Comparison',
+      description: options?.description || rawContent.description || 'Comparison of different knowledge graph data models',
       comparisonTable: {
         headers: rawContent.comparisonTable.headers || [],
         rows: rawContent.comparisonTable.rows || []
       },
       highlightedDifferences: rawContent.highlightedDifferences || [],
-      useCaseRecommendations: rawContent.useCaseRecommendations || []
+      useCaseRecommendations: rawContent.useCaseRecommendations || [],
+      showHighlights: options?.showHighlights ?? true,
+      showRecommendations: options?.showRecommendations ?? true
     };
   }
   
   private transformDataModelExamples(rawContent: any, options?: any): any {
     // Transform example data in different models
     return {
-      title: rawContent.title || 'Data Model Examples',
-      description: rawContent.description || 'Practical examples of the same data represented in different models',
-      scenario: rawContent.scenario || 'Basic knowledge graph example',
+      title: options?.title || rawContent.title || 'Data Model Examples',
+      description: options?.description || rawContent.description || 'Practical examples of the same data represented in different models',
+      scenario: options?.scenario || rawContent.scenario || 'Basic knowledge graph example',
       examples: rawContent.dataModelExamples.map((example: any) => ({
         modelName: example.modelName,
         modelType: example.modelType,
@@ -76,7 +82,9 @@ export class DataModelsDataTransformer extends BaseDataTransformer {
         code: example.code,
         language: example.language || 'text',
         highlights: example.highlights || []
-      }))
+      })),
+      showHighlights: options?.showHighlights ?? true,
+      showCode: options?.showCode ?? true
     };
   }
   

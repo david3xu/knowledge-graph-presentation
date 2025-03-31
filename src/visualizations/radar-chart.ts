@@ -158,7 +158,7 @@ export class RadarChartVisualization {
     
     // Create radar line generator
     this.radarLine = d3.lineRadial<number>()
-      .angle((d, i) => this.angleSlice * i)
+      .angle((_, i) => this.angleSlice * i)
       .radius(d => this.radialScale(d))
       .curve(this.options.useCurvedLines ? d3.curveCardinalClosed.tension(0.5) : d3.curveLinearClosed);
     
@@ -385,7 +385,7 @@ export class RadarChartVisualization {
       .attr('class', 'radar-axes');
     
     // Draw each axis line
-    axes.forEach((axis, i) => {
+    axes.forEach((_, i) => {
       const angle = this.angleSlice * i;
       const lineX = this.radius * Math.cos(angle);
       const lineY = this.radius * Math.sin(angle);
@@ -709,7 +709,7 @@ export class RadarChartVisualization {
       .append('g')
       .attr('class', 'legend-item')
       .attr('data-series', d => d.name)
-      .attr('transform', (d, i) => `translate(0, ${i * legendItemHeight})`)
+      .attr('transform', (_, i) => `translate(0, ${i * legendItemHeight})`)
       .style('cursor', 'pointer');
     
     // Add colored squares
@@ -727,7 +727,7 @@ export class RadarChartVisualization {
     
     // Add hover and click behaviors
     legend
-      .on('mouseover', (event, d) => {
+      .on('mouseover', (_, d) => {
         // Store current highlighted series
         this.currentHighlightedSeries = d.name;
         
@@ -769,7 +769,7 @@ export class RadarChartVisualization {
           .transition().duration(200)
           .attr('opacity', 1);
       })
-      .on('click', (event, d) => {
+      .on('click', (_, d) => {
         if (this.options.onClick) {
           this.options.onClick(d.name);
         }

@@ -16,7 +16,7 @@ export class CoreComponentsDataTransformer extends BaseDataTransformer {
     return this.normalizeContent(rawContent);
   }
   
-  private transformComponentGraph(rawContent: any, options?: any): GraphData {
+  private transformComponentGraph(rawContent: any, _options?: any): GraphData {
     // Transform raw content into graph visualization data
     const nodes = rawContent.entities.map((entity: any) => ({
       id: entity.id,
@@ -48,7 +48,7 @@ export class CoreComponentsDataTransformer extends BaseDataTransformer {
     };
   }
   
-  private transformComponentTypes(rawContent: any, options?: any): any {
+  private transformComponentTypes(rawContent: any, _options?: any): any {
     // Transform component types into structured format
     return {
       title: rawContent.title || 'Component Types',
@@ -67,7 +67,7 @@ export class CoreComponentsDataTransformer extends BaseDataTransformer {
     };
   }
   
-  private transformComponentDetails(rawContent: any, options?: any): any {
+  private transformComponentDetails(rawContent: any, _options?: any): any {
     // Transform detailed component information for deep-dive slides
     return {
       title: rawContent.title || 'Component Details',

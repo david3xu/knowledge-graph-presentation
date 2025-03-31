@@ -190,7 +190,7 @@ export const Easing = {
       return () => {};
     }
     
-    let currentStepIndex = 0;
+    // let currentStepIndex = 0;
     let currentCancelFn: (() => void) | null = null;
     let timeoutId: number | null = null;
     let cancelled = false;
@@ -291,7 +291,7 @@ export const Easing = {
     timing: AnimationTiming
   ): () => void {
     // Get computed style for string values
-    const computedStyle = window.getComputedStyle(element);
+    // const computedStyle = window.getComputedStyle(element);
     
     // Create interpolation functions for each property
     const interpolations = Object.entries(properties).map(([prop, { from, to }]) => {
@@ -391,11 +391,11 @@ export const Easing = {
     timing: AnimationTiming
   ): () => void {
     // Store original styles
-    const originalStyles: Partial<CSSStyleDeclaration> = {
-      opacity: element.style.opacity,
-      transform: element.style.transform,
-      visibility: element.style.visibility
-    };
+    // const originalStyles: Partial<CSSStyleDeclaration> = {
+    //   opacity: element.style.opacity,
+    //   transform: element.style.transform,
+    //   visibility: element.style.visibility
+    // };
     
     // Set initial styles
     element.style.visibility = 'visible';

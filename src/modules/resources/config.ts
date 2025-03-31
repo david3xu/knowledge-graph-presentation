@@ -23,7 +23,7 @@ export class ResourcesConfigFactory extends BaseConfigFactory {
     }
   }
   
-  private createResourceGridConfig(data: any, options?: any): any {
+  private createResourceGridConfig(_data: any, options?: any): any {
     return {
       layout: options?.layout || 'grid',
       itemsPerRow: options?.itemsPerRow || 3,
@@ -58,7 +58,7 @@ export class ResourcesConfigFactory extends BaseConfigFactory {
     };
   }
   
-  private createReferenceNetworkConfig(data: any, options?: any): any {
+  private createReferenceNetworkConfig(_data: any, options?: any): any {
     return {
       layout: options?.layout || 'force',
       nodeSizing: 'citations',
@@ -93,7 +93,7 @@ export class ResourcesConfigFactory extends BaseConfigFactory {
     };
   }
   
-  private createToolComparisonConfig(data: any, options?: any): any {
+  private createToolComparisonConfig(_data: any, options?: any): any {
     return {
       chartType: options?.chartType || 'radar',
       showLegend: options?.showLegend !== false,
@@ -128,7 +128,7 @@ export class ResourcesConfigFactory extends BaseConfigFactory {
     };
   }
   
-  private createLearningPathConfig(data: any, options?: any): any {
+  private createLearningPathConfig(_data: any, options?: any): any {
     return {
       orientation: options?.orientation || 'vertical',
       nodeStyle: {
@@ -162,7 +162,7 @@ export class ResourcesConfigFactory extends BaseConfigFactory {
     };
   }
   
-  private createTopicMapConfig(data: any, options?: any): any {
+  private createTopicMapConfig(_data: any, options?: any): any {
     return {
       mapType: options?.mapType || 'bubble',
       bubblePadding: 10,

@@ -94,7 +94,7 @@ export class ConstructionSlideFactory extends BaseSlideFactory {
   /**
    * Creates a best practices slide
    */
-  private createBestPracticesSlide(content: any, options?: any): SlideConfig {
+  private createBestPracticesSlide(content: any, _options?: any): SlideConfig {
     return this.createSlide(
       'best-practices',
       content.title || 'Knowledge Graph Construction Best Practices',
@@ -118,7 +118,7 @@ export class ConstructionSlideFactory extends BaseSlideFactory {
   /**
    * Creates a challenges slide
    */
-  private createChallengesSlide(content: any, options?: any): SlideConfig {
+  private createChallengesSlide(content: any, _options?: any): SlideConfig {
     return this.createSlide(
       'construction-challenges',
       content.title || 'Challenges in Knowledge Graph Construction',

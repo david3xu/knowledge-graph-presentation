@@ -1,6 +1,13 @@
 // src/modules/future-directions/data.ts
 import { BaseDataTransformer } from '../../utils/templates/data-transformer';
 
+// Connection interface for trend and research area connections
+interface Connection {
+  from: string;
+  to: string;
+  label: string;
+}
+
 export class FutureDirectionsDataTransformer extends BaseDataTransformer {
   protected transformContentImpl(rawContent: any, options?: any): any {
     // Determine content type and delegate to specific transformer
@@ -35,7 +42,10 @@ export class FutureDirectionsDataTransformer extends BaseDataTransformer {
         challenges: trend.challenges || []
       })),
       categories: rawContent.categories || this.extractCategories(trends),
-      trendConnections: rawContent.trendConnections || this.inferTrendConnections(trends)
+      trendConnections: rawContent.trendConnections || this.inferTrendConnections(trends),
+      showExamples: options?.showExamples ?? true,
+      showStakeholders: options?.showStakeholders ?? true,
+      showOpportunities: options?.showOpportunities ?? true
     };
   }
   
@@ -55,7 +65,10 @@ export class FutureDirectionsDataTransformer extends BaseDataTransformer {
         potentialImpact: area.potentialImpact || area.impact || ''
       })),
       domains: rawContent.domains || this.extractDomains(areas),
-      connections: rawContent.connections || this.inferResearchConnections(areas)
+      connections: rawContent.connections || this.inferResearchConnections(areas),
+      showKeyPlayers: options?.showKeyPlayers ?? true,
+      showPublications: options?.showPublications ?? true,
+      showTechnologies: options?.showTechnologies ?? true
     };
   }
   
@@ -88,7 +101,10 @@ export class FutureDirectionsDataTransformer extends BaseDataTransformer {
         { level: 7, name: "Mainstream" },
         { level: 8, name: "Widespread Use" },
         { level: 9, name: "Industry Standard" }
-      ]
+      ],
+      showAdvantages: options?.showAdvantages ?? true,
+      showLimitations: options?.showLimitations ?? true,
+      showUseCases: options?.showUseCases ?? true
     };
   }
   
@@ -108,21 +124,27 @@ export class FutureDirectionsDataTransformer extends BaseDataTransformer {
         implications: prediction.implications || []
       })),
       timeHorizons: rawContent.timeHorizons || this.extractTimeHorizons(predictions),
-      scenarioElements: rawContent.scenarioElements || []
+      scenarioElements: rawContent.scenarioElements || [],
+      showAssumptions: options?.showAssumptions ?? true,
+      showSignals: options?.showSignals ?? true,
+      showImplications: options?.showImplications ?? true
     };
   }
   
   private transformGeneralFutureData(rawContent: any, options?: any): any {
     // Default transformation for future directions content
     return {
-      title: rawContent.title || "Future Directions in Knowledge Graphs",
-      description: rawContent.description || "",
-      summary: rawContent.summary || "",
+      title: options?.title || rawContent.title || "Future Directions in Knowledge Graphs",
+      description: options?.description || rawContent.description || "",
+      summary: options?.summary || rawContent.summary || "",
       keyTakeaways: rawContent.keyTakeaways || [],
       sections: rawContent.sections || [],
       trends: rawContent.trends || [],
       challenges: rawContent.challenges || [],
-      opportunities: rawContent.opportunities || []
+      opportunities: rawContent.opportunities || [],
+      showKeyTakeaways: options?.showKeyTakeaways ?? true,
+      showChallenges: options?.showChallenges ?? true,
+      showOpportunities: options?.showOpportunities ?? true
     };
   }
   
@@ -141,61 +163,42 @@ export class FutureDirectionsDataTransformer extends BaseDataTransformer {
     return Array.from(categoriesSet);
   }
   
-  private inferTrendConnections(trends: any[]): any[] {
+  private inferTrendConnections(trends: any[]): Connection[] {
     // Infer connections between related trends
-    interface Connection {
-      from: string;
-      to: string;
-      label: string;
-    }
-    
     const connections: Connection[] = [];
-    const trendsById = new Map();
     
-    // Create map of trends by id
-    trends.forEach(trend => {
-      const id = trend.id || `trend-${trend.name.toLowerCase().replace(/\s+/g, '-')}`;
-      trendsById.set(id, trend);
-      trendsById.set(trend.name, trend); // Also map by name for flexibility
-    });
-    
-    // Look for related trends
-    trends.forEach(trend => {
-      const trendId = trend.id || `trend-${trend.name.toLowerCase().replace(/\s+/g, '-')}`;
-      
-      // Check for explicitly related trends
-      if (trend.relatedTrends && Array.isArray(trend.relatedTrends)) {
-        trend.relatedTrends.forEach((relatedTrendId: string) => {
-          // Try to find the related trend by id or name
-          const relatedTrend = trendsById.get(relatedTrendId);
+    // Simple algorithm to link trends with shared categories or keywords
+    for (let i = 0; i < trends.length; i++) {
+      for (let j = i + 1; j < trends.length; j++) {
+        const trendA = trends[i];
+        const trendB = trends[j];
+        
+        // Check for shared categories
+        if (trendA.category && trendB.category && trendA.category === trendB.category) {
+          connections.push({
+            from: trendA.id,
+            to: trendB.id,
+            label: 'Related Category'
+          });
+          continue; // Skip further checks for this pair
+        }
+        
+        // Check for shared keywords
+        if (trendA.keywords && trendB.keywords) {
+          const sharedKeywords = trendA.keywords.filter((kw: string) => 
+            trendB.keywords.includes(kw)
+          );
           
-          if (relatedTrend) {
-            const relatedId = relatedTrend.id || `trend-${relatedTrend.name.toLowerCase().replace(/\s+/g, '-')}`;
+          if (sharedKeywords.length > 0) {
             connections.push({
-              from: trendId,
-              to: relatedId,
-              label: "related to"
+              from: trendA.id,
+              to: trendB.id,
+              label: `Shared Keyword${sharedKeywords.length > 1 ? 's' : ''}`
             });
           }
-        });
-      }
-      
-      // Check for trends with same category
-      trends.forEach(otherTrend => {
-        if (trend === otherTrend) return; // Skip self
-        
-        const otherId = otherTrend.id || `trend-${otherTrend.name.toLowerCase().replace(/\s+/g, '-')}`;
-        
-        // Connect trends in same category
-        if (trend.category && trend.category === otherTrend.category) {
-          connections.push({
-            from: trendId,
-            to: otherId,
-            label: "same category"
-          });
         }
-      });
-    });
+      }
+    }
     
     return connections;
   }
@@ -215,13 +218,28 @@ export class FutureDirectionsDataTransformer extends BaseDataTransformer {
     return Array.from(domainsSet);
   }
   
-  private inferResearchConnections(areas: any[]): any[] {
+  private inferResearchConnections(areas: any[]): Connection[] {
     // Infer connections between related research areas
-    const connections = [];
+    const connections: Connection[] = [];
     
     // Implementation similar to inferTrendConnections
     // This would analyze research areas for connections based on shared technologies,
     // domains, key players, etc.
+    for (let i = 0; i < areas.length; i++) {
+      for (let j = i + 1; j < areas.length; j++) {
+        const areaA = areas[i];
+        const areaB = areas[j];
+        
+        // Check for shared domains
+        if (areaA.domain && areaB.domain && areaA.domain === areaB.domain) {
+          connections.push({
+            from: areaA.id,
+            to: areaB.id,
+            label: 'Same Domain'
+          });
+        }
+      }
+    }
     
     return connections;
   }

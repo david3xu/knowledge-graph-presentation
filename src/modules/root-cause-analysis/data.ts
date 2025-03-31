@@ -2,16 +2,16 @@ import { BaseDataTransformer } from '../../utils/templates/data-transformer';
 import { GraphData } from '../../types/graph-data';
 
 export class RCADataTransformer extends BaseDataTransformer {
-  protected transformContentImpl(rawContent: any, options?: any): any {
+  protected transformContentImpl(rawContent: any, _options?: any): any {
     // Route to appropriate transformation method based on content type
     if (rawContent.causalGraph) {
-      return this.transformCausalGraphData(rawContent, options);
+      return this.transformCausalGraphData(rawContent);
     } else if (rawContent.rcaMethodology) {
-      return this.transformRCAMethodologyData(rawContent, options);
+      return this.transformRCAMethodologyData(rawContent);
     } else if (rawContent.casestudy) {
-      return this.transformCaseStudyData(rawContent, options);
+      return this.transformCaseStudyData(rawContent);
     } else if (rawContent.comparisonMatrix) {
-      return this.transformComparisonMatrixData(rawContent, options);
+      return this.transformComparisonMatrixData(rawContent);
     }
     
     // Return normalized content for standard slide types
@@ -21,7 +21,7 @@ export class RCADataTransformer extends BaseDataTransformer {
   /**
    * Transforms causal graph data for visualization
    */
-  private transformCausalGraphData(rawContent: any, options?: any): GraphData {
+  private transformCausalGraphData(rawContent: any): GraphData {
     // Extract nodes from causal graph entities
     const nodes = rawContent.causalGraph.entities.map((entity: any) => ({
       id: entity.id,
@@ -29,27 +29,21 @@ export class RCADataTransformer extends BaseDataTransformer {
       type: entity.type || 'event',
       properties: {
         description: entity.description,
-        impact: entity.impact,
-        probability: entity.probability,
-        category: entity.category
+        confidence: entity.confidence,
+        impact: entity.impact
       }
     }));
     
     // Extract edges from causal relationships
     const edges = rawContent.causalGraph.relationships.map((rel: any) => ({
-      source: rel.source,
-      target: rel.target,
-      label: rel.type || 'causes',
-      directed: true,
+      id: rel.id,
+      source: rel.sourceId,
+      target: rel.targetId,
+      label: rel.type,
       properties: {
-        description: rel.description,
-        strength: rel.strength,
-        confidence: rel.confidence,
-        evidence: rel.evidence
-      },
-      style: {
-        width: this.mapCausalStrengthToWidth(rel.strength),
-        color: this.mapCausalConfidenceToColor(rel.confidence)
+        strength: this.mapCausalStrengthToWidth(rel.strength),
+        confidence: this.mapCausalConfidenceToColor(rel.confidence),
+        description: rel.description
       }
     }));
     
@@ -57,8 +51,8 @@ export class RCADataTransformer extends BaseDataTransformer {
       nodes,
       edges,
       metadata: {
-        name: rawContent.title || 'Causal Analysis Graph',
-        description: rawContent.description || 'Causal relationships between entities'
+        title: rawContent.causalGraph.title,
+        description: rawContent.causalGraph.description
       }
     };
   }
@@ -66,59 +60,56 @@ export class RCADataTransformer extends BaseDataTransformer {
   /**
    * Transforms RCA methodology data
    */
-  private transformRCAMethodologyData(rawContent: any, options?: any): any {
-    const steps = rawContent.rcaMethodology.steps.map((step: any, index: number) => ({
-      id: `step-${index + 1}`,
-      label: step.name,
-      type: step.type || 'process',
-      description: step.description,
-      techniques: step.techniques || [],
-      outputs: step.outputs || []
-    }));
-    
+  private transformRCAMethodologyData(rawContent: any): any {
     return {
-      title: rawContent.title || 'Root Cause Analysis Methodology',
-      description: rawContent.description || 'A systematic approach to identifying causes of problems',
-      steps,
-      direction: rawContent.rcaMethodology.direction || 'TB'
+      steps: rawContent.methodology.steps.map((step: any) => ({
+        id: step.id,
+        title: step.title,
+        description: step.description,
+        order: step.order
+      })),
+      metadata: {
+        title: rawContent.methodology.title,
+        description: rawContent.methodology.description
+      }
     };
   }
   
   /**
    * Transforms case study data
    */
-  private transformCaseStudyData(rawContent: any, options?: any): any {
+  private transformCaseStudyData(rawContent: any): any {
     return {
-      title: rawContent.casestudy.title || 'RCA Case Study',
-      industry: rawContent.casestudy.industry,
-      problem: rawContent.casestudy.problem,
-      approach: rawContent.casestudy.approach,
-      findings: rawContent.casestudy.findings,
-      solution: rawContent.casestudy.solution,
-      results: rawContent.casestudy.results,
-      keyLessons: rawContent.casestudy.keyLessons || []
+      caseStudies: rawContent.caseStudies.map((study: any) => ({
+        id: study.id,
+        title: study.title,
+        description: study.description,
+        outcomes: study.outcomes,
+        lessons: study.lessons
+      })),
+      metadata: {
+        title: rawContent.title,
+        description: rawContent.description
+      }
     };
   }
   
   /**
    * Transforms comparison matrix data
    */
-  private transformComparisonMatrixData(rawContent: any, options?: any): any {
-    const headers = ['Method', 'Approach', 'Strengths', 'Limitations', 'Best For'];
-    
-    const rows = rawContent.comparisonMatrix.methods.map((method: any) => ({
-      'Method': method.name,
-      'Approach': method.approach,
-      'Strengths': method.strengths,
-      'Limitations': method.limitations,
-      'Best For': method.bestFor
-    }));
-    
+  private transformComparisonMatrixData(rawContent: any): any {
     return {
-      headers,
-      rows,
-      title: rawContent.title || 'RCA Method Comparison',
-      description: rawContent.description || 'Comparing different root cause analysis methods'
+      methods: rawContent.comparison.methods.map((method: any) => ({
+        id: method.id,
+        name: method.name,
+        description: method.description,
+        strengths: method.strengths,
+        weaknesses: method.weaknesses
+      })),
+      metadata: {
+        title: rawContent.comparison.title,
+        description: rawContent.comparison.description
+      }
     };
   }
   

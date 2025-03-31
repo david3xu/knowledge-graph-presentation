@@ -236,37 +236,45 @@ export interface MergeGraphOptions {
  * @returns Filtered graph data
  */
 export function filterGraph(graph: GraphData, filter: GraphFilter): GraphData {
-  // Filter nodes based on criteria
-  const filteredNodes = graph.nodes.filter(node => {
-    // Filter by node types if specified
-    if (filter.nodeTypes && filter.nodeTypes.length > 0) {
-      if (!filter.nodeTypes.includes(node.type)) {
+  const result: GraphData = {
+    nodes: [...graph.nodes],
+    edges: [...graph.edges]
+  };
+
+  // Apply node type filter
+  if (filter.nodeTypes && filter.nodeTypes.length > 0) {
+    result.nodes = result.nodes.filter(node => {
+      if (!node.type) return false;
+      if (!filter.nodeTypes!.includes(node.type)) {
         return false;
       }
-    }
-    
-    // Filter by properties if specified
-    if (filter.properties && Object.keys(filter.properties).length > 0) {
-      for (const [key, value] of Object.entries(filter.properties)) {
-        if (!node.properties || node.properties[key] !== value) {
+      return true;
+    });
+  }
+  
+  // Filter by properties if specified
+  if (filter.properties && Object.keys(filter.properties).length > 0) {
+    result.nodes = result.nodes.filter(node => {
+      if (!node.properties) return false;
+      for (const [key, value] of Object.entries(filter.properties!)) {
+        if (node.properties[key] !== value) {
           return false;
         }
       }
-    }
-    
-    // Apply custom filter if provided
-    if (filter.customFilter && !filter.customFilter(node)) {
-      return false;
-    }
-    
-    return true;
-  });
+      return true;
+    });
+  }
+  
+  // Apply custom filter if provided
+  if (filter.customFilter) {
+    result.nodes = result.nodes.filter(node => filter.customFilter!(node));
+  }
   
   // Get IDs of filtered nodes
-  const filteredNodeIds = new Set(filteredNodes.map(node => node.id));
+  const filteredNodeIds = new Set(result.nodes.map(node => node.id));
   
   // Filter edges based on criteria and filtered nodes
-  const filteredEdges = graph.edges.filter(edge => {
+  result.edges = result.edges.filter(edge => {
     // Only keep edges where both source and target nodes are in the filtered set
     if (!filteredNodeIds.has(edge.source) || !filteredNodeIds.has(edge.target)) {
       return false;
@@ -298,8 +306,8 @@ export function filterGraph(graph: GraphData, filter: GraphFilter): GraphData {
   
   // Return filtered graph
   return {
-    nodes: filteredNodes,
-    edges: filteredEdges,
+    nodes: result.nodes,
+    edges: result.edges,
     metadata: graph.metadata
   };
 }
@@ -392,9 +400,11 @@ export function extractSubgraph(graph: GraphData, options: SubgraphOptions): Gra
         
         // Check node type filter
         if (traversalOptions.nodeTypes && 
-            traversalOptions.nodeTypes.length > 0 && 
-            !traversalOptions.nodeTypes.includes(connectedNode.type)) {
-          continue;
+            traversalOptions.nodeTypes.length > 0) {
+          if (!connectedNode.type || 
+              !traversalOptions.nodeTypes.includes(connectedNode.type)) {
+            continue;
+          }
         }
         
         // Add edge to subgraph
@@ -1085,22 +1095,31 @@ export function calculateEdgeWeights(graph: GraphData, options: EdgeWeightOption
  * @returns Analysis results
  */
 export function analyzeGraph(graph: GraphData): GraphAnalysisResult {
-  const nodeCount = graph.nodes.length;
-  const edgeCount = graph.edges.length;
-  
-  // Count node types
-  const nodeTypes: Record<string, number> = {};
+  // Initialize result object
+  const result: GraphAnalysisResult = {
+    nodeCount: graph.nodes.length,
+    edgeCount: graph.edges.length,
+    nodeTypes: {},
+    edgeTypes: {},
+    topInDegreeNodes: [],
+    topOutDegreeNodes: [],
+    density: 0,
+    averageDegree: 0,
+    isConnected: false
+  };
+
+  // Calculate node type distribution
   graph.nodes.forEach(node => {
-    nodeTypes[node.type] = (nodeTypes[node.type] || 0) + 1;
+    const nodeType = node.type || 'unknown';
+    result.nodeTypes[nodeType] = (result.nodeTypes[nodeType] || 0) + 1;
   });
   
   // Count edge types
-  const edgeTypes: Record<string, number> = {};
   graph.edges.forEach(edge => {
     if (edge.label) {
-      edgeTypes[edge.label] = (edgeTypes[edge.label] || 0) + 1;
+      result.edgeTypes[edge.label] = (result.edgeTypes[edge.label] || 0) + 1;
     } else {
-      edgeTypes['unlabeled'] = (edgeTypes['unlabeled'] || 0) + 1;
+      result.edgeTypes['unlabeled'] = (result.edgeTypes['unlabeled'] || 0) + 1;
     }
   });
   
@@ -1109,7 +1128,7 @@ export function analyzeGraph(graph: GraphData): GraphAnalysisResult {
   const outDegrees = calculateOutDegrees(graph);
   
   // Find nodes with highest in-degree
-  const topInDegreeNodes = [...inDegrees.entries()]
+  result.topInDegreeNodes = [...inDegrees.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([id, degree]) => {
@@ -1118,7 +1137,7 @@ export function analyzeGraph(graph: GraphData): GraphAnalysisResult {
     });
   
   // Find nodes with highest out-degree
-  const topOutDegreeNodes = [...outDegrees.entries()]
+  result.topOutDegreeNodes = [...outDegrees.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([id, degree]) => {
@@ -1127,28 +1146,18 @@ export function analyzeGraph(graph: GraphData): GraphAnalysisResult {
     });
   
   // Calculate graph density
-  const maxPossibleEdges = nodeCount * (nodeCount - 1);
-  const density = maxPossibleEdges > 0 ? edgeCount / maxPossibleEdges : 0;
+  const maxPossibleEdges = graph.nodes.length * (graph.nodes.length - 1);
+  result.density = maxPossibleEdges > 0 ? graph.edges.length / maxPossibleEdges : 0;
   
   // Calculate average degree
   const totalDegrees = [...inDegrees.values()].reduce((sum, degree) => sum + degree, 0);
-  const averageDegree = nodeCount > 0 ? totalDegrees / nodeCount : 0;
+  result.averageDegree = graph.nodes.length > 0 ? totalDegrees / graph.nodes.length : 0;
   
   // Check if graph is connected (simple approximation)
-  const isConnected = isGraphConnected(graph);
+  result.isConnected = isGraphConnected(graph);
   
   // Return analysis results
-  return {
-    nodeCount,
-    edgeCount,
-    nodeTypes,
-    edgeTypes,
-    topInDegreeNodes,
-    topOutDegreeNodes,
-    density,
-    averageDegree,
-    isConnected
-  };
+  return result;
 }
 
 /**

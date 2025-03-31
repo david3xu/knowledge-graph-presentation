@@ -5,11 +5,11 @@ export class ResourcesDataTransformer extends BaseDataTransformer {
   protected transformContentImpl(rawContent: any, options?: any): any {
     // Determine content type and delegate to specific transformer
     if (rawContent.references || rawContent.academicReferences) {
-      return this.transformReferencesData(rawContent, options);
+      return this.transformReferencesData(rawContent);
     } else if (rawContent.tools || rawContent.softwareTools) {
-      return this.transformToolsData(rawContent, options);
+      return this.transformToolsData(rawContent);
     } else if (rawContent.learningResources || rawContent.courses) {
-      return this.transformLearningResourcesData(rawContent, options);
+      return this.transformLearningResourcesData(rawContent);
     } else if (rawContent.communities || rawContent.communities) {
       return this.transformCommunitiesData(rawContent, options);
     }
@@ -18,91 +18,56 @@ export class ResourcesDataTransformer extends BaseDataTransformer {
     return this.transformGeneralResourcesData(rawContent, options);
   }
   
-  private transformReferencesData(rawContent: any, options?: any): any {
-    const references = rawContent.references || rawContent.academicReferences || [];
-    
+  private transformReferencesData(rawContent: any): any {
+    const references = rawContent.references || [];
     return {
       references: references.map((ref: any) => ({
         id: ref.id || `ref-${this.generateId(ref.title)}`,
         title: ref.title,
-        authors: ref.authors,
+        type: this.inferReferenceType(ref),
+        url: ref.url,
+        description: ref.description,
+        authors: ref.authors || [],
         year: ref.year,
-        venue: ref.venue || ref.journal || ref.conference,
-        url: ref.url || ref.doi || ref.link,
-        description: ref.description || ref.abstract,
-        type: ref.type || this.inferReferenceType(ref),
-        tags: ref.tags || ref.keywords || []
+        categories: ref.categories || []
       })),
-      categories: rawContent.categories || this.extractReferenceCategories(references),
-      recommendedReferences: rawContent.recommendedReferences || this.getRecommendedReferences(references)
+      categories: this.extractReferenceCategories(references),
+      recommended: this.getRecommendedReferences(references)
     };
   }
   
-  private transformToolsData(rawContent: any, options?: any): any {
-    const tools = rawContent.tools || rawContent.softwareTools || [];
-    
+  private transformToolsData(rawContent: any): any {
+    const tools = rawContent.tools || [];
     return {
       tools: tools.map((tool: any) => ({
         id: tool.id || `tool-${this.generateId(tool.name)}`,
         name: tool.name,
         description: tool.description,
-        url: tool.url || tool.website,
-        category: tool.category,
-        license: tool.license,
-        languages: tool.languages || tool.programmingLanguages || [],
-        frameworks: tool.frameworks || [],
-        features: tool.features || [],
-        useCases: tool.useCases || tool.use_cases || [],
-        complexity: tool.complexity || 'medium',
-        maturity: tool.maturity || 'stable',
-        organization: tool.organization || tool.company || tool.maintainer
+        url: tool.url,
+        type: tool.type || 'general',
+        categories: tool.categories || []
       })),
-      categories: rawContent.toolCategories || this.extractToolCategories(tools),
-      maturityLevels: [
-        { level: 'experimental', description: 'Early-stage, may have limited features or stability' },
-        { level: 'beta', description: 'Feature-complete but may have bugs or limitations' },
-        { level: 'stable', description: 'Reliable for production use' },
-        { level: 'mature', description: 'Well-established with extensive adoption' }
-      ],
-      complexityLevels: [
-        { level: 'beginner', description: 'Suitable for newcomers to knowledge graphs' },
-        { level: 'intermediate', description: 'Requires some familiarity with knowledge graph concepts' },
-        { level: 'advanced', description: 'Designed for specialists with extensive experience' }
-      ]
+      categories: this.extractToolCategories(tools)
     };
   }
   
-  private transformLearningResourcesData(rawContent: any, options?: any): any {
+  private transformLearningResourcesData(rawContent: any): any {
     const resources = rawContent.learningResources || rawContent.courses || [];
-    
     return {
       learningResources: resources.map((resource: any) => ({
         id: resource.id || `resource-${this.generateId(resource.title)}`,
         title: resource.title,
         description: resource.description,
-        url: resource.url || resource.link,
-        type: resource.type || this.inferResourceType(resource),
-        provider: resource.provider || resource.author || resource.organization,
+        type: this.inferResourceType(resource),
+        url: resource.url,
         level: resource.level || 'intermediate',
-        duration: resource.duration,
-        cost: resource.cost || resource.price,
-        topics: resource.topics || resource.subjects || [],
-        prerequisites: resource.prerequisites || [],
-        format: resource.format || 'online'
+        topics: resource.topics || []
       })),
-      resourceTypes: rawContent.resourceTypes || [
-        'course', 'tutorial', 'book', 'video', 'article', 'documentation', 'workshop'
-      ],
-      levels: rawContent.levels || [
-        { level: 'beginner', description: 'No prior knowledge required' },
-        { level: 'intermediate', description: 'Basic understanding of knowledge graphs needed' },
-        { level: 'advanced', description: 'In-depth coverage for experienced practitioners' }
-      ],
-      topics: rawContent.topics || this.extractResourceTopics(resources)
+      topics: this.extractResourceTopics(resources)
     };
   }
   
-  private transformCommunitiesData(rawContent: any, options?: any): any {
+  private transformCommunitiesData(rawContent: any, _options?: any): any {
     const communities = rawContent.communities || [];
     
     return {
@@ -126,7 +91,7 @@ export class ResourcesDataTransformer extends BaseDataTransformer {
     };
   }
   
-  private transformGeneralResourcesData(rawContent: any, options?: any): any {
+  private transformGeneralResourcesData(rawContent: any, _options?: any): any {
     // Default transformation for resources content
     return {
       title: rawContent.title || "Knowledge Graph Resources",

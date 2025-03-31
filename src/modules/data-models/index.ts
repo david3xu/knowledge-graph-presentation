@@ -108,7 +108,7 @@ export class DataModelsModule extends BaseModuleTemplate<DataModelsOptions> {
       );
       
       // Create code block visualizations
-      const codeVisualizationConfigs = exampleContent.examples.map((example: any, index: number) => 
+      const codeVisualizationConfigs = exampleContent.examples?.map((example: any, _index: number) => 
         this.configFactory.createConfig(
           'code-block', 
           example, 
@@ -117,7 +117,7 @@ export class DataModelsModule extends BaseModuleTemplate<DataModelsOptions> {
             highlightLines: example.highlights
           }
         )
-      );
+      ) || [];
       
       // Add example comparison slide
       slides.push(this.slideFactory.createDomainSlide(
@@ -131,7 +131,21 @@ export class DataModelsModule extends BaseModuleTemplate<DataModelsOptions> {
     
     // Add practical usage slide if requested
     if (options.includePracticalUsage !== false) {
-      const usageContent = this.dataTransformer.transformContent('kg-model-selection');
+      // Try to get the usage content, but provide a default if not found
+      let usageContent;
+      try {
+        usageContent = this.dataTransformer.transformContent('kg-model-selection');
+      } catch (error) {
+        // Provide a default if content not found
+        usageContent = {
+          title: 'Model Selection',
+          content: 'Choose the appropriate knowledge graph model based on your use case requirements.',
+          recommendations: [
+            { model: 'RDF', useCase: 'For semantic web and linked open data applications' },
+            { model: 'Property Graph', useCase: 'For enterprise applications with complex property needs' }
+          ]
+        };
+      }
       slides.push(this.slideFactory.createDomainSlide('practical-usage', usageContent));
     }
     

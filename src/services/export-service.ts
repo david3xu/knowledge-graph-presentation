@@ -8,32 +8,33 @@ export class ExportService {
      * @param filename The filename for the exported PDF
      * @returns Promise that resolves when the export is complete
      */
-    async exportToPDF(element: HTMLElement, filename: string): Promise<void> {
+    public async exportToPdf(element: HTMLElement): Promise<void> {
       try {
-        // Dynamically import html2pdf to reduce initial load time
-        const html2pdf = (await import('html2pdf.js')).default;
-        
-        // Configure PDF options
         const options = {
-          margin: [0.5, 0.5, 0.5, 0.5],
-          filename: filename,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+          margin: [10, 10, 10, 10] as [number, number, number, number],
+          filename: 'knowledge-graph-presentation.pdf',
+          image: {
+            type: 'jpeg',
+            quality: 0.98
+          },
+          html2canvas: {
+            scale: 2
+          },
+          jsPDF: {
+            unit: 'mm',
+            format: 'a4',
+            orientation: 'landscape'
+          }
         };
-        
-        // Show export message
-        this.showExportMessage('Exporting to PDF...');
-        
-        // Export to PDF
-        await html2pdf().set(options).from(element).save();
-        
-        // Hide export message
-        this.hideExportMessage();
+
+        // Import html2pdf dynamically to avoid SSR issues
+        if (typeof window !== 'undefined') {
+          const html2pdf = (await import('html2pdf.js')).default;
+          await html2pdf(element).set(options).save();
+        }
       } catch (error) {
-        console.error('PDF export failed:', error);
-        this.hideExportMessage();
-        this.showExportError('PDF export failed');
+        console.error('Error exporting to PDF:', error);
+        throw error;
       }
     }
     

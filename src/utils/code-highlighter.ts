@@ -189,7 +189,7 @@ export interface SyntaxHighlightOptions {
     }
     
     // Process the tokens and create highlighted content
-    let currentLine = 1;
+    // let currentLine = 1;
     
     // Group tokens by line
     const tokensByLine: Record<number, Token[]> = {};

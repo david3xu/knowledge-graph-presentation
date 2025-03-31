@@ -25,6 +25,12 @@ export interface GraphNode extends d3.SimulationNodeDatum {
   x?: number;
   y?: number;
   
+  /** Position object (used by layout algorithms) */
+  position?: {
+    x: number;
+    y: number;
+  };
+  
   /** Visual styling overrides for this specific node */
   style?: NodeStyle;
 

@@ -39,6 +39,20 @@ export class MarkdownContentRegistry {
   }
   
   /**
+   * Safely retrieves content by identifier with optional fallback
+   * @param id Content identifier
+   * @param fallback Optional fallback value if content not found
+   * @returns The stored content or fallback
+   */
+  safeGetContent(id: string, fallback: any = null): any {
+    try {
+      return this.getContent(id);
+    } catch (error) {
+      return fallback;
+    }
+  }
+  
+  /**
    * Checks if content exists in the registry
    * @param id Content identifier
    * @returns Boolean indicating whether content exists

@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+  <!-- Background with subtle grid -->
+  <rect width="800" height="500" fill="#f8f9fa"/>
+  <pattern id="smallGrid" width="10" height="10" patternUnits="userSpaceOnUse">
+    <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#e9ecef" stroke-width="0.5"/>
+  </pattern>
+  <rect width="800" height="500" fill="url(#smallGrid)"/>
+
+  <!-- Entity nodes -->
+  <circle cx="200" cy="150" r="60" fill="#4C9AFF" stroke="#0747A6" stroke-width="2"/>
+  <circle cx="500" cy="150" r="60" fill="#4C9AFF" stroke="#0747A6" stroke-width="2"/>
+  <circle cx="350" cy="350" r="60" fill="#4C9AFF" stroke="#0747A6" stroke-width="2"/>
+  
+  <!-- Node text labels -->
+  <text x="200" y="155" font-family="Arial" font-size="16" text-anchor="middle" fill="#ffffff" font-weight="bold">Person</text>
+  <text x="200" y="175" font-family="Arial" font-size="12" text-anchor="middle" fill="#ffffff">(Entity)</text>
+  
+  <text x="500" y="155" font-family="Arial" font-size="16" text-anchor="middle" fill="#ffffff" font-weight="bold">Organization</text>
+  <text x="500" y="175" font-family="Arial" font-size="12" text-anchor="middle" fill="#ffffff">(Entity)</text>
+
+  <text x="350" y="355" font-family="Arial" font-size="16" text-anchor="middle" fill="#ffffff" font-weight="bold">Publication</text>
+  <text x="350" y="375" font-family="Arial" font-size="12" text-anchor="middle" fill="#ffffff">(Entity)</text>
+  
+  <!-- Entity Properties -->
+  <rect x="120" y="60" width="160" height="60" rx="5" fill="#ffffff" stroke="#DFE1E6" stroke-width="1"/>
+  <text x="200" y="85" font-family="Arial" font-size="14" text-anchor="middle" fill="#172B4D" font-weight="bold">Person Properties</text>
+  <text x="200" y="105" font-family="Arial" font-size="12" text-anchor="middle" fill="#172B4D">name: "John Smith"</text>
+  <text x="200" y="120" font-family="Arial" font-size="12" text-anchor="middle" fill="#172B4D">birthDate: "1980-05-15"</text>
+  
+  <rect x="420" y="60" width="160" height="60" rx="5" fill="#ffffff" stroke="#DFE1E6" stroke-width="1"/>
+  <text x="500" y="85" font-family="Arial" font-size="14" text-anchor="middle" fill="#172B4D" font-weight="bold">Organization Properties</text>
+  <text x="500" y="105" font-family="Arial" font-size="12" text-anchor="middle" fill="#172B4D">name: "Tech Corp"</text>
+  <text x="500" y="120" font-family="Arial" font-size="12" text-anchor="middle" fill="#172B4D">founded: "2005"</text>
+  
+  <rect x="270" y="410" width="160" height="60" rx="5" fill="#ffffff" stroke="#DFE1E6" stroke-width="1"/>
+  <text x="350" y="435" font-family="Arial" font-size="14" text-anchor="middle" fill="#172B4D" font-weight="bold">Publication Properties</text>
+  <text x="350" y="455" font-family="Arial" font-size="12" text-anchor="middle" fill="#172B4D">title: "Knowledge Graphs"</text>
+  <text x="350" y="470" font-family="Arial" font-size="12" text-anchor="middle" fill="#172B4D">year: "2023"</text>
+
+  <!-- Connecting lines with arrows for relationships -->
+  <!-- Person to Organization (WORKS_AT) -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#172B4D"/>
+    </marker>
+  </defs>
+  
+  <line x1="260" y1="150" x2="440" y2="150" stroke="#172B4D" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- Relationship properties -->
+  <rect x="300" y="120" width="100" height="40" rx="10" fill="#FFD700" stroke="#FF8C00" stroke-width="1"/>
+  <text x="350" y="145" font-family="Arial" font-size="14" text-anchor="middle" fill="#172B4D" font-weight="bold">WORKS_AT</text>
+
+  <rect x="300" y="75" width="100" height="35" rx="5" fill="#ffffff" stroke="#DFE1E6" stroke-width="1"/>
+  <text x="350" y="95" font-family="Arial" font-size="12" text-anchor="middle" fill="#172B4D">since: "2018"</text>
+  <text x="350" y="110" font-family="Arial" font-size="12" text-anchor="middle" fill="#172B4D">role: "Engineer"</text>
+  
+  <!-- Person to Publication (AUTHORED) -->
+  <line x1="200" y1="210" x2="350" y2="290" stroke="#172B4D" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <rect x="230" y="240" width="100" height="25" rx="10" fill="#FFD700" stroke="#FF8C00" stroke-width="1"/>
+  <text x="280" y="257" font-family="Arial" font-size="14" text-anchor="middle" fill="#172B4D" font-weight="bold">AUTHORED</text>
+  
+  <!-- Organization to Publication (PUBLISHED) -->
+  <line x1="500" y1="210" x2="350" y2="290" stroke="#172B4D" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <rect x="380" y="240" width="100" height="25" rx="10" fill="#FFD700" stroke="#FF8C00" stroke-width="1"/>
+  <text x="430" y="257" font-family="Arial" font-size="14" text-anchor="middle" fill="#172B4D" font-weight="bold">PUBLISHED</text>
+  
+  <!-- Legend -->
+  <rect x="620" y="380" width="160" height="100" rx="5" fill="rgba(255,255,255,0.9)" stroke="#DFE1E6" stroke-width="1"/>
+  <text x="700" y="400" font-family="Arial" font-size="14" text-anchor="middle" fill="#172B4D" font-weight="bold">Legend</text>
+  
+  <circle cx="640" cy="420" r="10" fill="#4C9AFF" stroke="#0747A6" stroke-width="1"/>
+  <text x="700" y="425" font-family="Arial" font-size="12" text-anchor="middle" fill="#172B4D">Entity (Node)</text>
+  
+  <rect x="630" y="440" width="20" height="10" rx="5" fill="#FFD700" stroke="#FF8C00" stroke-width="1"/>
+  <text x="700" y="447" font-family="Arial" font-size="12" text-anchor="middle" fill="#172B4D">Relationship (Edge)</text>
+  
+  <rect x="630" y="460" width="20" height="10" rx="2" fill="#ffffff" stroke="#DFE1E6" stroke-width="1"/>
+  <text x="700" y="467" font-family="Arial" font-size="12" text-anchor="middle" fill="#172B4D">Properties (Attributes)</text>
+  
+  <!-- Title -->
+  <text x="400" y="30" font-family="Arial" font-size="20" text-anchor="middle" fill="#172B4D" font-weight="bold">Knowledge Graph Components</text>
+</svg>

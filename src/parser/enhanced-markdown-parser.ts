@@ -101,13 +101,22 @@ export class EnhancedMarkdownParser {
    */
   private extractSections(content: string): Array<{title: string, content: string}> {
     const cleanContent = this.removeFrontMatter(content);
-    const sectionMatches = Array.from(cleanContent.matchAll(/^## (.*?)$([\s\S]*?)(?=^## |\n$)/gm));
+    // Match both ## and # for section headers, and handle content until next header or end
+    const sectionMatches = Array.from(cleanContent.matchAll(/^(?:##|#)\s+(?:Slide \d+:\s*)?(.*?)$([\s\S]*?)(?=^(?:##|#) |\n$)/gm));
     const sections: Array<{title: string, content: string}> = [];
     
     for (const match of sectionMatches) {
       sections.push({
-        title: match[1],
+        title: match[1].trim(),
         content: match[2].trim()
+      });
+    }
+    
+    // If no sections found, treat the entire content as one section
+    if (sections.length === 0) {
+      sections.push({
+        title: 'Content',
+        content: cleanContent.trim()
       });
     }
     

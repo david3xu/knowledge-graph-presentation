@@ -134,18 +134,18 @@ export class ImplementationRoadmapSlideFactory extends BaseSlideFactory {
   private createCriticalSuccessFactorsSlide(content: any, options?: any): SlideConfig {
     return this.createSlide(
       'critical-success-factors',
-      "Critical Success Factors",
+      options?.title || "Critical Success Factors",
       {
-        definition: "Key elements that must be addressed to ensure successful knowledge graph implementation.",
+        definition: options?.definition || "Key elements that must be addressed to ensure successful knowledge graph implementation.",
         listItems: [{
-          title: "Success Factors",
+          title: options?.listTitle || "Success Factors",
           items: content.critical_success_factors || content.criticalSuccessFactors || [],
-          type: 'bullet'
+          type: options?.listType || 'bullet'
         }]
       },
-      null,
+      options?.visualizationConfig,
       {
-        transition: 'slide',
+        transition: options?.transition || 'slide',
         notes: content.presenterNotes || "Presenter: This slide highlights the critical factors for successful knowledge graph implementation."
       }
     );
@@ -154,30 +154,30 @@ export class ImplementationRoadmapSlideFactory extends BaseSlideFactory {
   private createResourcesNeededSlide(content: any, options?: any): SlideConfig {
     return this.createSlide(
       'resources-needed',
-      "Resources & Requirements",
+      options?.title || "Resources & Requirements",
       {
-        definition: "The personnel, technological, and organizational resources required for effective implementation.",
+        definition: options?.definition || "The personnel, technological, and organizational resources required for effective implementation.",
         listItems: [
           {
-            title: "Personnel",
+            title: options?.personnelTitle || "Personnel",
             items: content.personnel || content.resources?.personnel || [],
-            type: 'bullet'
+            type: options?.listType || 'bullet'
           },
           {
-            title: "Technology",
+            title: options?.technologyTitle || "Technology",
             items: content.technology || content.resources?.technology || [],
-            type: 'bullet'
+            type: options?.listType || 'bullet'
           },
           {
-            title: "Organizational",
+            title: options?.organizationalTitle || "Organizational",
             items: content.organizational || content.resources?.organizational || [],
-            type: 'bullet'
+            type: options?.listType || 'bullet'
           }
         ]
       },
-      null,
+      options?.visualizationConfig,
       {
-        transition: 'slide',
+        transition: options?.transition || 'slide',
         notes: content.presenterNotes || "Presenter: This slide outlines the resources needed for knowledge graph implementation."
       }
     );

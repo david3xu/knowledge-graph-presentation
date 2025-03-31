@@ -377,6 +377,12 @@ export enum ScreenSize {
     container.style.display = 'grid';
     container.style.gridGap = '1rem';
     
+    // Style grid items
+    items.forEach(item => {
+      (item as HTMLElement).style.width = '100%';
+      (item as HTMLElement).style.height = '100%';
+    });
+    
     // Update grid on screen size change
     const handleSizeChange = () => {
       const columns = globalResponsiveHandler.getValue(columnConfig);

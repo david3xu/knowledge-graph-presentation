@@ -25,7 +25,7 @@ export class IndustryApplicationsConfigFactory extends BaseConfigFactory {
   /**
    * Creates configuration for industry matrix heatmap
    */
-  private createIndustryMatrixConfig(data: any, options?: any): any {
+  private createIndustryMatrixConfig(_data: any, options?: any): any {
     return {
       width: options?.width || 700,
       height: options?.height || 500,
@@ -117,7 +117,7 @@ export class IndustryApplicationsConfigFactory extends BaseConfigFactory {
   /**
    * Creates configuration for metrics bar chart
    */
-  private createMetricsBarChartConfig(data: any, options?: any): any {
+  private createMetricsBarChartConfig(_data: any, options?: any): any {
     // Determine which metric to visualize
     const metricKey = options?.metric || 'roi';
     
@@ -162,7 +162,7 @@ export class IndustryApplicationsConfigFactory extends BaseConfigFactory {
       },
       animation: {
         duration: 800,
-        delay: (d: any, i: number) => i * 50
+        delay: (_d: any, i: number) => i * 50
       },
       tooltips: true,
       legend: false,
@@ -173,7 +173,7 @@ export class IndustryApplicationsConfigFactory extends BaseConfigFactory {
   /**
    * Creates configuration for use case bubble chart
    */
-  private createUseCaseBubbleConfig(data: any, options?: any): any {
+  private createUseCaseBubbleConfig(_data: any, options?: any): any {
     return {
       width: options?.width || 700,
       height: options?.height || 500,
@@ -236,7 +236,7 @@ export class IndustryApplicationsConfigFactory extends BaseConfigFactory {
   /**
    * Creates configuration for industry relationship graph
    */
-  private createIndustryGraphConfig(data: any, options?: any): any {
+  private createIndustryGraphConfig(_data: any, options?: any): any {
     return {
       layout: {
         name: 'force',

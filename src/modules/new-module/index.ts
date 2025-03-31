@@ -10,7 +10,7 @@ export interface NewModuleOptions {
 }
 
 export class NewModule extends BaseModuleTemplate<NewModuleOptions> {
-  public createSlides(options: NewModuleOptions = {}): SlideGroup {
+  public createSlides(_options: NewModuleOptions = {}): SlideGroup {
     // Implement slide creation logic
     return this.slideFactory.createSlideGroup(
       'New Module',

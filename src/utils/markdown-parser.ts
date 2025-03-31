@@ -473,7 +473,7 @@ export class MarkdownParser {
     // Transform node-edge syntax: [Entity]-relationship->[Entity]
     transformed = transformed.replace(
       /\[([^\]]+)\]-([^-\]]+)->?\[([^\]]+)\]/g,
-      (match, source, relationship, target) => {
+      (_, source, relationship, target) => {
         return `<div class="kg-relationship">
           <span class="kg-entity" data-entity="${source.trim()}">${source.trim()}</span>
           <span class="kg-relationship-type">${relationship.trim()}</span>
@@ -485,7 +485,7 @@ export class MarkdownParser {
     // Transform property syntax: Entity.property = value
     transformed = transformed.replace(
       /([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)\s*=\s*(.+?)(?=$|\n)/g,
-      (match, entity, property, value) => {
+      (_, entity, property, value) => {
         return `<div class="kg-property">
           <span class="kg-entity" data-entity="${entity.trim()}">${entity.trim()}</span>
           <span class="kg-property-name">${property.trim()}</span>

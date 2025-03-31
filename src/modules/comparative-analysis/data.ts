@@ -17,7 +17,7 @@ export class ComparativeAnalysisDataTransformer extends BaseDataTransformer {
     return this.normalizeContent(rawContent);
   }
   
-  private transformRelationalComparison(rawContent: any, options?: any): any {
+  private transformRelationalComparison(rawContent: any, _options?: any): any {
     return {
       title: rawContent.title || 'Knowledge Graphs vs. Relational Databases',
       description: rawContent.description || 'Comparing the capabilities of knowledge graphs with traditional relational databases',
@@ -28,7 +28,7 @@ export class ComparativeAnalysisDataTransformer extends BaseDataTransformer {
     };
   }
   
-  private transformDocumentComparison(rawContent: any, options?: any): any {
+  private transformDocumentComparison(rawContent: any, _options?: any): any {
     return {
       title: rawContent.title || 'Knowledge Graphs vs. Document Databases',
       description: rawContent.description || 'Comparing the capabilities of knowledge graphs with document databases',
@@ -39,7 +39,7 @@ export class ComparativeAnalysisDataTransformer extends BaseDataTransformer {
     };
   }
   
-  private transformTechnologyComparison(rawContent: any, options?: any): any {
+  private transformTechnologyComparison(rawContent: any, _options?: any): any {
     return {
       title: rawContent.title || 'Technology Comparison',
       description: rawContent.description || 'Comparison of different technologies for knowledge representation',
@@ -50,7 +50,7 @@ export class ComparativeAnalysisDataTransformer extends BaseDataTransformer {
     };
   }
   
-  private transformUseCaseComparison(rawContent: any, options?: any): any {
+  private transformUseCaseComparison(rawContent: any, _options?: any): any {
     return {
       title: rawContent.title || 'Use Case Suitability',
       description: rawContent.description || 'Comparing the suitability of different data technologies for various use cases',

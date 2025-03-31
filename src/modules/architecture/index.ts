@@ -58,13 +58,13 @@ export class ArchitectureModule extends BaseModuleTemplate<ArchitectureOptions> 
     
     // Conditionally add layer details slides
     if (options.includeLayerDetails) {
-      (architectureContent.layers || []).forEach(layer => {
+      (architectureContent.layers || []).forEach((layer: { id: string; name: string }) => {
         const layerVisualizationConfig = this.configFactory.createConfig(
           'architecture-layers',
           {
             layers: [layer],
             connections: architectureContent.connections?.filter(
-              conn => conn.source === layer.id || conn.target === layer.id
+              (conn: { source: string; target: string }) => conn.source === layer.id || conn.target === layer.id
             ) || []
           },
           { 

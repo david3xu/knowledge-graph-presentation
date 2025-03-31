@@ -28,7 +28,7 @@ export class IndustryApplicationsSlideFactory extends BaseSlideFactory {
   /**
    * Creates an industry overview slide
    */
-  private createIndustryOverviewSlide(content: any, options?: any): SlideConfig {
+  private createIndustryOverviewSlide(content: any, _options?: any): SlideConfig {
     return this.createSlide(
       'industry-overview',
       content.title || 'Industry Applications of Knowledge Graphs',

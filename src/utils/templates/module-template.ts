@@ -45,10 +45,23 @@ export abstract class BaseModuleTemplate<T extends ModuleOptions> implements Mod
    */
   protected getModuleMetadata(metadataId: string): any {
     try {
-      return markdownContentRegistry.getContent(metadataId) || {};
+      // Try to use safeGetContent if available, fall back to normal getContent if not
+      if (typeof markdownContentRegistry.safeGetContent === 'function') {
+        return markdownContentRegistry.safeGetContent(metadataId, {}) || {};
+      } else {
+        return markdownContentRegistry.getContent(metadataId) || {};
+      }
     } catch (error) {
       console.warn(`Module metadata not found: ${metadataId}`);
-      return {};
+      
+      // Default metadata for common modules
+      const defaultMetadata: Record<string, any> = {
+        'intro-group-metadata': { id: 'intro', title: 'Introduction to Knowledge Graphs', classes: ['intro-section'] },
+        'core-components-metadata': { id: 'core-components', title: 'Core Components', classes: ['components-section'] },
+        'data-models-metadata': { id: 'data-models', title: 'Data Models', classes: ['models-section'] },
+      };
+      
+      return defaultMetadata[metadataId] || {};
     }
   }
 }

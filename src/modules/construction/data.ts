@@ -1,5 +1,4 @@
 import { BaseDataTransformer } from '../../utils/templates/data-transformer';
-import { GraphData } from '../../types/graph-data';
 
 export class ConstructionDataTransformer extends BaseDataTransformer {
   protected transformContentImpl(rawContent: any, options?: any): any {
@@ -70,8 +69,10 @@ export class ConstructionDataTransformer extends BaseDataTransformer {
     return {
       nodes,
       edges,
-      direction: rawContent.direction || 'TB',
-      title: rawContent.title || 'Knowledge Graph Construction Process'
+      direction: options?.direction || rawContent.direction || 'TB',
+      title: options?.title || rawContent.title || 'Knowledge Graph Construction Process',
+      showProperties: options?.showProperties ?? true,
+      showChallenges: options?.showChallenges ?? true
     };
   }
   
@@ -80,7 +81,7 @@ export class ConstructionDataTransformer extends BaseDataTransformer {
    */
   private transformDataSourcesData(rawContent: any, options?: any): any {
     // Transform data sources into table format
-    const headers = ['Source Type', 'Description', 'Structure', 'Integration Complexity'];
+    const headers = options?.headers || ['Source Type', 'Description', 'Structure', 'Integration Complexity'];
     
     const rows = rawContent.dataSources.map((source: any) => ({
       'Source Type': source.type,
@@ -92,8 +93,10 @@ export class ConstructionDataTransformer extends BaseDataTransformer {
     return {
       headers,
       rows,
-      title: rawContent.title || 'Knowledge Graph Data Sources',
-      description: rawContent.description || 'Common data sources for knowledge graph construction'
+      title: options?.title || rawContent.title || 'Knowledge Graph Data Sources',
+      description: options?.description || rawContent.description || 'Common data sources for knowledge graph construction',
+      showComplexity: options?.showComplexity ?? true,
+      sortable: options?.sortable ?? true
     };
   }
   
@@ -113,8 +116,11 @@ export class ConstructionDataTransformer extends BaseDataTransformer {
     
     return {
       methods,
-      title: rawContent.title || 'Knowledge Extraction Methods',
-      description: rawContent.description || 'Techniques for extracting knowledge from various data sources'
+      title: options?.title || rawContent.title || 'Knowledge Extraction Methods',
+      description: options?.description || rawContent.description || 'Techniques for extracting knowledge from various data sources',
+      showAccuracy: options?.showAccuracy ?? true,
+      showScalability: options?.showScalability ?? true,
+      showLimitations: options?.showLimitations ?? true
     };
   }
   
